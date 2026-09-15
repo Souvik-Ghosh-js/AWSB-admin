@@ -1,0 +1,30 @@
+# Netlify build config — admin panel.
+#
+# Deployed as a SEPARATE Netlify site from the storefront, on its own origin.
+# That separation is the security boundary: a scripting bug in the shop cannot
+# reach an admin session held here.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_PUBLIC_API_URL = "https://api.attarworldsonarbangla.com/api/v1"
+  NEXT_PUBLIC_SITE_URL = "https://admin.attarworldsonarbangla.com"
+  NEXT_PUBLIC_USE_MOCKS = "false"
+
+# Every route here is staff-only: never indexed, never cached.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    # DENY, not SAMEORIGIN — nothing should ever frame the admin panel.
+    X-Frame-Options = "DENY"
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store, max-age=0"

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Cormorant_Garamond, Inter } from 'next/font/google';
+import { Fraunces, Inter } from 'next/font/google';
 
 import '@/styles/globals.css';
 
@@ -10,10 +10,12 @@ import '@/styles/globals.css';
  * house, but there is no Header or Footer here: this app has no customer-facing
  * chrome, no navigation to the shop, and no marketing metadata.
  */
-const cormorant = Cormorant_Garamond({
+const fraunces = Fraunces({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
-  variable: '--font-cormorant',
+  // No `weight`: Fraunces is variable, and next/font rejects `axes` unless the
+  // weight axis is left variable. Headings pick their weight in CSS.
+  axes: ['opsz'],
+  variable: '--font-fraunces',
   display: 'swap',
 });
 
@@ -46,7 +48,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${inter.variable}`}>
+    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
       <body>{children}</body>
     </html>
   );

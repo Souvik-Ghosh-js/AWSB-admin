@@ -185,7 +185,7 @@ export default function AdminOrderDetailPage() {
         <div className="lg:col-span-2">
           <AdminCard title="Items">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[30rem] border-collapse text-left">
+              <table className="aw-table">
                 <thead>
                   <tr className="border-b border-line">
                     <th scope="col" className="aw-eyebrow py-2 pr-3 text-[0.5625rem]">Product</th>
@@ -200,15 +200,15 @@ export default function AdminOrderDetailPage() {
                   {order.items.map((item, i) => (
                     <tr key={`${item.sku}-${i}`} className="border-b border-line last:border-0">
                       <td className="py-3 pr-3 text-[0.8125rem]">{item.productName}</td>
-                      <td className="py-3 pr-3 text-[0.8125rem]">{item.sizeMl} ml</td>
-                      <td className="aw-tabular py-3 pr-3 text-xs text-muted">{item.sku}</td>
-                      <td className="aw-tabular py-3 pr-3 text-right text-[0.8125rem]">
+                      <td data-label="Size" className="py-3 pr-3 text-[0.8125rem]">{item.sizeMl} ml</td>
+                      <td data-label="SKU" className="aw-tabular py-3 pr-3 text-xs text-muted">{item.sku}</td>
+                      <td data-label="Unit" className="aw-tabular py-3 pr-3 text-right text-[0.8125rem]">
                         {formatPaise(item.unitPricePaise, { compact: true })}
                       </td>
-                      <td className="aw-tabular py-3 pr-3 text-right text-[0.8125rem]">
+                      <td data-label="Qty" className="aw-tabular py-3 pr-3 text-right text-[0.8125rem]">
                         {item.quantity}
                       </td>
-                      <td className="aw-tabular py-3 text-right text-[0.8125rem]">
+                      <td data-label="Total" className="aw-tabular py-3 text-right text-[0.8125rem]">
                         {formatPaise(item.lineTotalPaise, { compact: true })}
                       </td>
                     </tr>

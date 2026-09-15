@@ -56,6 +56,13 @@ function blankVariant(sizeMl: number): VariantDraft {
   };
 }
 
+/**
+ * Stable timestamp for mock fallback rows. See the note at its use site: any
+ * clock read during render differs between the server pass and the client
+ * pass and breaks hydration.
+ */
+const MOCK_TIMESTAMP = '2026-09-01T00:00:00.000Z';
+
 export default function AdminProductEditPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -141,8 +148,15 @@ export default function AdminProductEditPage() {
                 weightGrams: null,
               })),
               categories: mock.categories,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              // A FIXED timestamp, not new Date(): these pages are client
+              // components that Next still server-renders, so a clock read
+              // here produces one value on the server and another in the
+              // browser — which is exactly the "Hydration failed because the
+              // server rendered HTML didn't match the client" error the dev
+              // overlay was reporting on every admin screen. Mock rows are
+              // display-only fallbacks, so a constant is honest here.
+              createdAt: MOCK_TIMESTAMP,
+              updatedAt: MOCK_TIMESTAMP,
             });
           }
         } else {

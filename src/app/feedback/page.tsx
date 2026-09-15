@@ -76,11 +76,7 @@ export default function AdminFeedbackPage() {
             type="button"
             onClick={() => setStatus(tab.value)}
             aria-pressed={status === tab.value}
-            className={`border px-3.5 py-1.5 text-xs transition-colors ${
-              status === tab.value
-                ? 'border-brand bg-brand text-[#f7f4ea]'
-                : 'border-line-strong text-ink hover:border-brand'
-            }`}
+            className="aw-chip"
           >
             {tab.label}
           </button>

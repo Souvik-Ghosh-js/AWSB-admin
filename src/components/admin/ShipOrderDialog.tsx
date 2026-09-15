@@ -191,7 +191,7 @@ export function ShipOrderDialog({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center text-muted hover:text-ink"
+            className="-mt-1 -mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted hover:text-ink active:bg-surface-alt"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -252,7 +252,7 @@ export function ShipOrderDialog({
               type="button"
               onClick={() => fileInput.current?.click()}
               disabled={scanning}
-              className="aw-btn aw-btn-outline aw-btn-sm"
+              className="aw-btn aw-btn-outline min-h-11 w-full sm:w-auto"
             >
               {scanning ? 'Reading label…' : 'Scan or upload label photo'}
             </button>
@@ -264,7 +264,7 @@ export function ShipOrderDialog({
                   setOcrSuggestion(null);
                   setScanError(null);
                 }}
-                className="aw-btn aw-btn-ghost aw-btn-sm"
+                className="aw-btn aw-btn-ghost min-h-11 w-full sm:w-auto"
               >
                 Clear scan
               </button>
@@ -310,7 +310,7 @@ export function ShipOrderDialog({
                           key={alt}
                           type="button"
                           onClick={() => setTrackingNumber(alt)}
-                          className="aw-tabular border border-line-strong px-2 py-1 text-xs transition-colors hover:border-brand"
+                          className="aw-tabular min-h-10 rounded-md border border-line-strong px-3 py-2 text-sm transition-colors hover:border-brand active:bg-surface-alt"
                         >
                           {alt}
                         </button>

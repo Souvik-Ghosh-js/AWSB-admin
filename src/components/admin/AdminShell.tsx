@@ -88,18 +88,31 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-bg lg:flex">
       {/* ------------------------------------------------------- sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 shrink-0 overflow-y-auto border-r border-line bg-surface transition-transform lg:static lg:translate-x-0 ${
+        id="admin-nav"
+        className={`fixed inset-y-0 left-0 z-50 w-[17rem] max-w-[85vw] shrink-0 overflow-y-auto border-r border-line bg-surface transition-transform lg:static lg:w-64 lg:max-w-none lg:translate-x-0 ${
           navOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex h-16 items-center gap-2.5 border-b border-line px-5">
-          <LogoMark className="h-7 w-7 text-brand" />
-          <div>
+          <LogoMark className="h-7 w-7 shrink-0 text-brand" />
+          <div className="min-w-0 flex-1">
             <p className="font-[family-name:var(--font-display)] text-base leading-none text-brand">
               Attar World
             </p>
             <p className="aw-eyebrow mt-1 text-[0.5625rem] leading-none">Admin</p>
           </div>
+          {/* Tapping the scrim was the only way out of the drawer, which is
+              not discoverable and is a long reach on a tall phone. */}
+          <button
+            type="button"
+            onClick={() => setNavOpen(false)}
+            aria-label="Close navigation"
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted active:bg-surface-alt lg:hidden"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
         <nav className="px-3 py-5">
@@ -118,7 +131,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                       <Link
                         href={item.href}
                         aria-current={active ? 'page' : undefined}
-                        className={`block rounded-sm px-3 py-2 text-[0.8125rem] transition-colors ${
+                        className={`block rounded-md px-3 py-2.5 text-[0.875rem] transition-colors lg:py-2 lg:text-[0.8125rem] ${
                           active
                             ? 'bg-[color-mix(in_srgb,var(--color-brand)_8%,transparent)] font-medium text-brand'
                             : 'text-ink hover:bg-surface-alt'
@@ -162,18 +175,28 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
       {/* ---------------------------------------------------------- main */}
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-bg px-4 lg:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-bg px-2 lg:hidden">
           <button
             type="button"
             onClick={() => setNavOpen(true)}
             aria-label="Open navigation"
-            className="flex h-9 w-9 items-center justify-center text-ink"
+            aria-expanded={navOpen}
+            aria-controls="admin-nav"
+            /* 44px, not 36: this is the only way to navigate on a phone and it
+               is tapped with a parcel in the other hand. */
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink active:bg-surface-alt"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-              <path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              <path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
-          <span className="aw-eyebrow">Admin</span>
+          {/* The page name. Without it a phone user had only the word "Admin"
+              and had to open the drawer to see where they were. */}
+          <span className="truncate text-[0.9375rem] font-medium text-ink">
+            {NAV.find((n) =>
+              n.href === '/' ? pathname === '/' : pathname.startsWith(n.href)
+            )?.label ?? 'Admin'}
+          </span>
         </header>
 
         <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</div>

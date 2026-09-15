@@ -17,6 +17,13 @@ import type { AdminProduct } from '@/lib/types';
  * The stock column shows EVERY size, because stock is per-variant: "12 in
  * stock" is meaningless when the 3ml has 40 and the 12ml has none.
  */
+/**
+ * Stable timestamp for mock fallback rows. See the note at its use site: any
+ * clock read during render differs between the server pass and the client
+ * pass and breaks hydration.
+ */
+const MOCK_TIMESTAMP = '2026-09-01T00:00:00.000Z';
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProduct[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,8 +70,15 @@ export default function AdminProductsPage() {
                 weightGrams: null,
               })),
               categories: p.categories,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              // A FIXED timestamp, not new Date(): these pages are client
+              // components that Next still server-renders, so a clock read
+              // here produces one value on the server and another in the
+              // browser — which is exactly the "Hydration failed because the
+              // server rendered HTML didn't match the client" error the dev
+              // overlay was reporting on every admin screen. Mock rows are
+              // display-only fallbacks, so a constant is honest here.
+              createdAt: MOCK_TIMESTAMP,
+              updatedAt: MOCK_TIMESTAMP,
             }))
           );
         } else {
@@ -105,7 +119,7 @@ export default function AdminProductsPage() {
           <AdminEmpty message="No products yet. Create your first fragrance." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[44rem] border-collapse text-left">
+            <table className="aw-table">
               <thead>
                 <tr className="border-b border-line bg-surface-alt">
                   <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Fragrance</th>
@@ -134,10 +148,10 @@ export default function AdminProductsPage() {
                         </span>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 align-top text-[0.8125rem] text-muted">
+                    <td data-label="Family" className="px-4 py-3 align-top text-[0.8125rem] text-muted">
                       {product.scentFamily ?? '—'}
                     </td>
-                    <td className="px-4 py-3 align-top">
+                    <td data-label="Sizes" className="px-4 py-3 align-top">
                       <ul className="space-y-1">
                         {[...product.variants]
                           .sort((a, b) => a.sizeMl - b.sizeMl)
@@ -170,7 +184,7 @@ export default function AdminProductsPage() {
                           ))}
                       </ul>
                     </td>
-                    <td className="px-4 py-3 align-top">
+                    <td data-label="Status" className="px-4 py-3 align-top">
                       <span
                         className={`aw-badge ${
                           product.status === 'active'

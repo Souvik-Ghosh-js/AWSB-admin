@@ -118,7 +118,7 @@ export default function AdminInventoryPage() {
               <AdminEmpty message="Nothing is below its low-stock threshold." />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[34rem] border-collapse text-left">
+                <table className="aw-table">
                   <thead>
                     <tr className="border-b border-line">
                       <th scope="col" className="aw-eyebrow py-2 pr-3 text-[0.5625rem]">Fragrance</th>
@@ -139,9 +139,10 @@ export default function AdminInventoryPage() {
                             {row.productName}
                           </Link>
                         </td>
-                        <td className="py-3 pr-3 text-[0.8125rem]">{row.sizeMl} ml</td>
-                        <td className="aw-tabular py-3 pr-3 text-xs text-muted">{row.sku}</td>
+                        <td data-label="Size" className="py-3 pr-3 text-[0.8125rem]">{row.sizeMl} ml</td>
+                        <td data-label="SKU" className="aw-tabular py-3 pr-3 text-xs text-muted">{row.sku}</td>
                         <td
+                          data-label="In stock"
                           className={`aw-tabular py-3 pr-3 text-right text-[0.8125rem] ${
                             row.stockQty === 0 ? 'text-danger' : 'text-[#8a6c26]'
                           }`}
@@ -177,7 +178,7 @@ export default function AdminInventoryPage() {
               <AdminEmpty message="No stock movements recorded yet." />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[40rem] border-collapse text-left">
+                <table className="aw-table">
                   <thead>
                     <tr className="border-b border-line">
                       <th scope="col" className="aw-eyebrow py-2 pr-3 text-[0.5625rem]">When</th>
@@ -194,25 +195,26 @@ export default function AdminInventoryPage() {
                         <td className="py-2.5 pr-3 text-xs text-muted">
                           {formatDateTime(move.createdAt)}
                         </td>
-                        <td className="py-2.5 pr-3 text-[0.8125rem]">
+                        <td data-label="Item" className="py-2.5 pr-3 text-[0.8125rem]">
                           {move.productName}
                           <span className="text-muted"> · {move.sizeMl} ml</span>
                         </td>
-                        <td className="py-2.5 pr-3 text-xs text-muted">
+                        <td data-label="Reason" className="py-2.5 pr-3 text-xs text-muted">
                           {move.reason.replace(/_/g, ' ')}
                           {move.orderNumber ? ` · ${move.orderNumber}` : ''}
                         </td>
                         <td
+                          data-label="Change"
                           className={`aw-tabular py-2.5 pr-3 text-right text-[0.8125rem] ${
                             move.delta < 0 ? 'text-danger' : 'text-brand-soft'
                           }`}
                         >
                           {move.delta > 0 ? `+${move.delta}` : move.delta}
                         </td>
-                        <td className="aw-tabular py-2.5 pr-3 text-right text-[0.8125rem]">
+                        <td data-label="Balance" className="aw-tabular py-2.5 pr-3 text-right text-[0.8125rem]">
                           {move.balanceAfter}
                         </td>
-                        <td className="py-2.5 text-xs text-muted">
+                        <td data-label="By" className="py-2.5 text-xs text-muted">
                           {move.actorEmail ?? 'system'}
                         </td>
                       </tr>

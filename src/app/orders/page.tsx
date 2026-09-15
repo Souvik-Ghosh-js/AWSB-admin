@@ -82,11 +82,7 @@ export default function AdminOrdersPage() {
               type="button"
               onClick={() => setStatus(filter.value)}
               aria-pressed={status === filter.value}
-              className={`shrink-0 border px-3.5 py-1.5 text-xs whitespace-nowrap transition-colors ${
-                status === filter.value
-                  ? 'border-brand bg-brand text-[#f7f4ea]'
-                  : 'border-line-strong text-ink hover:border-brand'
-              }`}
+              className="aw-chip"
             >
               {filter.label}
             </button>
@@ -125,7 +121,7 @@ export default function AdminOrdersPage() {
           <AdminEmpty message="No orders match this filter." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[46rem] border-collapse text-left">
+            <table className="aw-table">
               <thead>
                 <tr className="border-b border-line bg-surface-alt">
                   <Th>Order</Th>
@@ -154,24 +150,24 @@ export default function AdminOrdersPage() {
                         {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
                       </p>
                     </Td>
-                    <Td className="text-xs text-muted">
+                    <Td label="Placed" className="text-xs text-muted">
                       {formatDateTime(order.placedAt ?? order.createdAt)}
                     </Td>
-                    <Td>{order.shipFullName}</Td>
-                    <Td className="text-xs text-muted">
+                    <Td label="Customer">{order.shipFullName}</Td>
+                    <Td label="Destination" className="text-xs text-muted">
                       {order.shipCity} {order.shipPincode}
                       <br />
                       <span className="text-[0.6875rem]">
                         {order.shipZone === 'kolkata' ? 'Kolkata' : 'Rest of India'}
                       </span>
                     </Td>
-                    <Td className="aw-tabular text-right">
+                    <Td label="Total" className="aw-tabular text-right">
                       {formatPaise(order.totalPaise, { compact: true })}
                     </Td>
-                    <Td>
+                    <Td label="Status">
                       <StatusBadge status={order.status as OrderStatus} />
                     </Td>
-                    <Td>
+                    <Td label="Payment">
                       <StatusBadge status={order.paymentStatus} />
                     </Td>
                   </tr>
@@ -193,6 +189,23 @@ function Th({ children, className = '' }: { children: React.ReactNode; className
   );
 }
 
-function Td({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-4 py-3 text-[0.8125rem] align-top ${className}`}>{children}</td>;
+function Td({
+  children,
+  className = '',
+  label,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  /** Column name, painted as the field label when the row stacks into a card
+      below `lg`. Omit only for cells that are self-explanatory stacked. */
+  label?: string;
+}) {
+  return (
+    <td
+      {...(label ? { 'data-label': label } : {})}
+      className={`px-4 py-3 text-[0.8125rem] align-top ${className}`}
+    >
+      {children}
+    </td>
+  );
 }

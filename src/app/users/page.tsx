@@ -210,7 +210,7 @@ export default function AdminUsersPage() {
           <AdminEmpty message="No admin users returned." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[38rem] border-collapse text-left">
+            <table className="aw-table">
               <thead>
                 <tr className="border-b border-line bg-surface-alt">
                   <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Name</th>
@@ -229,16 +229,16 @@ export default function AdminUsersPage() {
                         <span className="ml-2 text-xs text-muted">(you)</span>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 text-[0.8125rem] break-all text-muted">
+                    <td data-label="Email" className="px-4 py-3 text-[0.8125rem] break-all text-muted">
                       {row.email}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Role" className="px-4 py-3">
                       <span className="aw-badge bg-surface-alt text-muted">{row.role}</span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted">
+                    <td data-label="Last signed in" className="px-4 py-3 text-xs text-muted">
                       {row.lastLoginAt ? formatDateTime(row.lastLoginAt) : 'Never'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Status" className="px-4 py-3">
                       {canManage && me?.id !== row.id ? (
                         <button
                           type="button"

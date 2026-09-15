@@ -95,7 +95,7 @@ export default function AdminCouriersPage() {
           <AdminEmpty message="No couriers configured." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[44rem] border-collapse text-left">
+            <table className="aw-table">
               <thead>
                 <tr className="border-b border-line bg-surface-alt">
                   <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Courier</th>
@@ -112,12 +112,12 @@ export default function AdminCouriersPage() {
                       <p className="text-[0.875rem]">{courier.name}</p>
                       <p className="aw-tabular text-xs text-muted">{courier.slug}</p>
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Tracking template" className="px-4 py-3">
                       <p className="aw-tabular max-w-md truncate text-xs text-muted">
                         {courier.trackingUrlTemplate ?? '—'}
                       </p>
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Deep link" className="px-4 py-3">
                       <span
                         className={`aw-badge ${
                           courier.supportsDeepLink
@@ -128,7 +128,7 @@ export default function AdminCouriersPage() {
                         {courier.supportsDeepLink ? 'Works' : 'Number only'}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Active" className="px-4 py-3">
                       <span className="aw-badge bg-surface-alt text-muted">
                         {courier.isActive ? 'Yes' : 'No'}
                       </span>

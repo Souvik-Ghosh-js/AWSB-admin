@@ -266,7 +266,7 @@ export default function AdminCouponsPage() {
           <AdminEmpty message="No coupons yet." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[42rem] border-collapse text-left">
+            <table className="aw-table">
               <thead>
                 <tr className="border-b border-line bg-surface-alt">
                   <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Code</th>
@@ -288,7 +288,7 @@ export default function AdminCouponsPage() {
                         <p className="text-xs text-muted">{coupon.description}</p>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 text-[0.8125rem]">
+                    <td data-label="Discount" className="px-4 py-3 text-[0.8125rem]">
                       {coupon.discountType === 'percent'
                         ? `${coupon.discountValue}%`
                         : formatPaise(coupon.discountValue, { compact: true })}
@@ -299,19 +299,19 @@ export default function AdminCouponsPage() {
                         </span>
                       ) : null}
                     </td>
-                    <td className="aw-tabular px-4 py-3 text-[0.8125rem] text-muted">
+                    <td data-label="Minimum" className="aw-tabular px-4 py-3 text-[0.8125rem] text-muted">
                       {coupon.minOrderPaise
                         ? formatPaise(coupon.minOrderPaise, { compact: true })
                         : '—'}
                     </td>
-                    <td className="aw-tabular px-4 py-3 text-[0.8125rem]">
+                    <td data-label="Used" className="aw-tabular px-4 py-3 text-[0.8125rem]">
                       {coupon.usedCount}
                       {coupon.usageLimit ? ` / ${coupon.usageLimit}` : ''}
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted">
+                    <td data-label="Expires" className="px-4 py-3 text-xs text-muted">
                       {coupon.expiresAt ? formatDate(coupon.expiresAt) : 'No expiry'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Status" className="px-4 py-3">
                       {editable ? (
                         <button
                           type="button"
