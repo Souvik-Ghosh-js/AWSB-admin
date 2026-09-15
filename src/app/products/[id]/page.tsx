@@ -448,16 +448,20 @@ export default function AdminProductEditPage() {
 
           {/* -------------------------------------- per-size price & stock */}
           <AdminCard title="Sizes, price and stock">
-            <p className="mb-4 text-[0.8125rem] text-muted">
+            <p className="mb-7 text-sm text-soft">
               Every size has its own price and its own stock. Leave a size blank to
               leave it out of the catalogue.
             </p>
 
-            <div className="space-y-4">
+            {/* A <legend> sits ON the fieldset's top border, so roughly half its
+                height protrudes above the box. The gap above each fieldset has
+                to absorb that, or the "3 ml" label lands on top of whatever is
+                above it — which is exactly what it did on a phone. */}
+            <div className="space-y-7">
               {variants.map((variant) => (
                 <fieldset
                   key={variant.sizeMl}
-                  className="rounded-sm border border-line p-4"
+                  className="rounded-md border border-line px-4 pt-3 pb-4 sm:px-5"
                 >
                   <legend className="px-2">
                     <span className="font-[family-name:var(--font-display)] text-lg text-brand">
