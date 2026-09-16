@@ -1,895 +1,369 @@
 @import 'tailwindcss';
 
 /*
- * Attar World Sonar Bangla — "modern Indian premium".
+ * Attar World — admin panel.
  *
- * The palette is unchanged (it was always right): deep forest green carries
- * the weight, warm ivory carries the space, gold is an ACCENT ONLY — prices,
- * thin rules, small flourishes. Used broadly it reads cheap.
+ * This is a TOOL, not a shopfront. It is operated with a parcel in one hand,
+ * often on a phone, often in a hurry. So:
  *
- * What changed, and why, after looking at the rendered pages:
+ *   - Phone first. Every layout starts at 390px and opens up, never the other
+ *     way round. Tables become cards below `lg`.
+ *   - 44px minimum tap targets on anything that performs an action. Below that
+ *     people miss and mis-tap, which on this panel means shipping a parcel to
+ *     the wrong customer.
+ *   - Status is carried by SHAPE and TEXT as well as colour — a pill with a
+ *     word in it, not a bare coloured dot. Colour alone fails for a colour
+ *     blind user and in bright sunlight.
+ *   - Quiet chrome, loud data. The interface should disappear.
  *
- *  1. TYPE HAD NO WEIGHT. Cormorant Garamond at 300-400 is a thin Garamond
- *     revival; headings got lighter as they got larger. Fraunces at 600-700
- *     replaces it. See app/layout.tsx.
- *
- *  2. EVERYTHING WAS GREY. Body, taglines, meta, footer and descriptions all
- *     used --color-muted (#7a8079) on #faf7f0 — about 3.5:1, under AA. There
- *     was no true dark on the page, so it read washed out. --color-ink is now
- *     darker, --color-muted is darkened to pass AA, and a --color-soft step
- *     exists for genuinely secondary text.
- *
- *  3. NO TYPE SCALE. Sizes were ad-hoc: a dozen hand-written text-[0.8125rem].
- *     There is now a real ramp (--text-*) and components use it.
- *
- *  4. CAPS EVERYWHERE. Uppercase + 0.14em tracking was on eyebrows, buttons,
- *     labels, table headers and badges at once, so none of them signalled
- *     anything. Buttons are now sentence case; caps are reserved for eyebrows.
- *
- *  5. NOTHING HAD PRESENCE. 2-3px radius and near-invisible shadows meant
- *     cards read as floating rectangles. Radii and shadows now step properly.
- *
- * Tailwind v4 has no config file — tokens are declared in @theme, which
- * generates the utilities (bg-bg, text-ink, border-line, …) and emits them as
- * CSS custom properties for hand-written CSS.
+ * The palette is the shop's, so the two surfaces feel like one house, but used
+ * far more sparingly: green for identity and primary action, gold only for
+ * money.
  */
 
 @theme {
-  /* ---- Colour ------------------------------------------------------ */
-  --color-bg: #faf7f0;
-  --color-surface: #ffffff;
-  --color-surface-alt: #f4efe4;
-  --color-surface-sunk: #ede6d8;
+  /* ---- surfaces ---- */
+  --color-bg: #f7f6f3;          /* app background — warm, not stark white */
+  --color-surface: #ffffff;     /* cards, rows, panels */
+  --color-surface-alt: #f2f0ea; /* table headers, sunk areas */
+  --color-surface-hover: #faf9f6;
 
-  /* Ink ramp. Previously a single #1f2a24 plus a too-light muted, which is
-     why the pages looked flat. Three deliberate steps: */
-  --color-ink: #16201a;      /* primary text — near-black, warm */
-  --color-soft: #4a544c;     /* secondary text — ~7.5:1, comfortable */
-  --color-muted: #66706a;    /* meta only — ~5.1:1, passes AA at 14px+ */
+  /* ---- ink ramp ---- */
+  --color-ink: #16201a;         /* primary text */
+  --color-soft: #4a544c;        /* secondary text ~7.5:1 */
+  --color-muted: #6b756e;       /* meta only ~5.1:1, AA at 14px+ */
 
+  /* ---- brand ---- */
   --color-brand: #14432a;
   --color-brand-soft: #2d6a4f;
-  --color-brand-deep: #0d2e1d;
-  --color-accent: #9d7a2f;   /* darkened from #b08d3f: the old gold failed
-                                contrast on ivory at small sizes, which is
-                                where prices live */
-  --color-accent-bright: #b08d3f; /* the original, for large text and rules */
+  --color-brand-tint: #e8efe9;
+  --color-accent: #9d7a2f;      /* money only */
 
-  /* Derived, so the palette stays a closed set. */
-  --color-line: #e6dfce;
-  --color-line-strong: #d0c5ac;
-  --color-accent-soft: #e8dcc0;
-  --color-danger: #8c2f22;
-  --color-success: #2d6a4f;
+  /* ---- lines ---- */
+  --color-line: #e4e0d6;
+  --color-line-strong: #cfc8b8;
 
-  /* ---- Type -------------------------------------------------------- */
-  /* Wired to next/font in app/layout.tsx; the fallbacks matter because a
-     blocked Google Fonts request must not collapse the page to Times. */
-  --font-display: var(--font-fraunces), 'Fraunces', 'Iowan Old Style',
-    'Palatino Linotype', Georgia, serif;
-  --font-sans: var(--font-inter), 'Inter', system-ui, -apple-system,
-    'Segoe UI', Roboto, sans-serif;
+  /* ---- semantic. Separate from brand so status never reads as decoration. */
+  --color-ok: #1f6b45;
+  --color-ok-bg: #e4f0e8;
+  --color-warn: #8a6216;
+  --color-warn-bg: #f7efdc;
+  --color-danger: #9b2c1f;
+  --color-danger-bg: #fbe9e6;
+  --color-info: #1f5673;
+  --color-info-bg: #e3eef4;
 
-  /* A real scale, roughly a 1.25 ratio, so sizes are chosen not invented. */
-  --text-2xs: 0.6875rem;   /* 11px — eyebrows, badges */
-  --text-xs: 0.78125rem;   /* 12.5px — meta, captions */
-  --text-sm: 0.875rem;     /* 14px — secondary UI */
-  --text-base: 1rem;       /* 16px — body. Was 15px, too small for a shop */
-  --text-lg: 1.125rem;     /* 18px — lead paragraphs */
-  --text-xl: 1.375rem;     /* 22px */
-  --text-2xl: 1.75rem;     /* 28px */
-  --text-3xl: 2.25rem;     /* 36px */
-  --text-4xl: 3rem;        /* 48px */
-  --text-5xl: 3.75rem;     /* 60px — hero only */
+  /* ---- type ---- */
+  --font-display: var(--font-fraunces), 'Iowan Old Style', Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
 
-  /* ---- Shape ------------------------------------------------------- */
-  /* Was 0/2/3px, which is why nothing felt like an object. */
-  --radius-none: 0px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.78125rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
   --radius-lg: 14px;
-  --radius-xl: 20px;
 
-  /* Shadows are warm (tinted with the ink colour, never pure black) and now
-     actually step, so elevation reads. */
-  --shadow-card: 0 1px 2px rgba(22, 32, 26, 0.04), 0 4px 16px rgba(22, 32, 26, 0.06);
-  --shadow-raised: 0 2px 6px rgba(22, 32, 26, 0.06), 0 14px 38px rgba(22, 32, 26, 0.10);
-  --shadow-float: 0 4px 12px rgba(22, 32, 26, 0.08), 0 24px 60px rgba(22, 32, 26, 0.14);
+  --shadow-card: 0 1px 2px rgba(22, 32, 26, 0.04), 0 2px 8px rgba(22, 32, 26, 0.05);
+  --shadow-raised: 0 2px 6px rgba(22, 32, 26, 0.07), 0 12px 28px rgba(22, 32, 26, 0.10);
+  --shadow-sheet: 0 -4px 24px rgba(22, 32, 26, 0.14);
 }
 
-/* ------------------------------------------------------------------ base */
+/* --------------------------------------------------------------- base */
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
-html {
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  /* Stops iOS zooming when a form field is focused. */
   -webkit-text-size-adjust: 100%;
-  scroll-behavior: smooth;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--text-2xl); }
+h2 { font-size: var(--text-xl); }
+h3 { font-size: var(--text-lg); }
+
+/* A visible focus ring is not optional on a tool used at speed. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-soft);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
 
-body {
-  margin: 0;
-  background-color: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-/*
- * Long product names ("Waalid Shamama", "Gulab-e-Bangla") and the large hero
- * heading are the only strings long enough to threaten a narrow screen, so
- * let them break rather than establish a wide min-content floor.
- *
- * Deliberately NO `overflow-x: clip/hidden` on html/body. Measuring the real
- * page found no horizontal overflow at any width (scrollWidth 375 at a 390px
- * viewport, 1425 at 1440), so such a guard would only mask future layout bugs
- * — and `overflow` on the root element breaks `position: sticky`, which the
- * site header depends on.
- */
-h1,
-h2,
-h3 {
-  overflow-wrap: break-word;
-}
-
-/*
- * Headings.
- *
- * weight 600 with opsz pushed to the display end. Cormorant needed 400 here
- * and looked frail; Fraunces at 600 has the mass the old design was missing.
- * Negative tracking tightens large serif settings, which otherwise look gappy.
- */
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-variation-settings: 'opsz' 42, 'SOFT' 0, 'WONK' 1;
-  letter-spacing: -0.021em;
-  line-height: 1.12;
-  color: var(--color-brand-deep);
-  margin: 0;
-  /* Fraunces defaults to old-style figures; lining reads better in headings
-     that contain sizes and prices. */
-  font-variant-numeric: lining-nums;
-  text-wrap: balance;
-}
-
-h3,
-h4 {
-  font-variation-settings: 'opsz' 20, 'SOFT' 0, 'WONK' 0;
-  letter-spacing: -0.012em;
-  line-height: 1.25;
-}
-
-p {
-  margin: 0;
-  text-wrap: pretty;
-}
-
-/*
- * Link reset.
- *
- * `:not(.aw-btn)` matters more than it looks. This block is UNLAYERED, and in
- * the CSS cascade unlayered rules beat everything in a @layer — so a bare
- * `a { color: inherit }` here outranks `.aw-btn-primary { color: … }` in
- * @layer components no matter how specific that selector is. That is what
- * made the primary call to action render as dark green text on the dark green
- * fill: the button was inheriting body's ink colour and no amount of added
- * specificity inside the layer could win. Excluding buttons from the reset
- * lets each variant own its own colour.
- */
-a:not(.aw-btn) {
-  color: inherit;
-  text-decoration: none;
-}
-
-a.aw-btn {
-  text-decoration: none;
-}
-
-img,
-svg,
-video {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/*
- * Form-control reset.
- *
- * `:not(.aw-btn)` for the same reason as the link reset above: this block is
- * UNLAYERED and so outranks every rule in @layer components regardless of
- * specificity. A bare `button { color: inherit }` here is what kept "Add to
- * cart" rendering as dark green text on the dark green fill — the <button>
- * inherited body's ink colour and .aw-btn-primary could never win. Buttons
- * still inherit `font`; only the colour is left to each variant.
- */
-button:not(.aw-btn):not(.aw-chip),
-input,
-select,
-textarea {
-  font: inherit;
-  color: inherit;
-}
-
-button.aw-chip {
-  font-family: inherit;
-}
-
-button.aw-btn {
-  /*
-   * font-FAMILY only, never the `font` shorthand.
-   *
-   * `font: inherit` here is unlayered, so it overrode .aw-btn's own
-   * font-size/font-weight in @layer components and rendered every <button>
-   * CTA at 16px/400 while the <a> CTAs stayed 15px/550 — the same control,
-   * two different typefaces' worth of weight, side by side.
-   */
-  font-family: inherit;
-}
-
-/* A visible, on-brand focus ring. Never remove it — the checkout is a long
-   form and keyboard users must be able to see where they are. */
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-::selection {
-  background: var(--color-accent-soft);
-  color: var(--color-brand-deep);
-}
-
-/* ------------------------------------------------------ component layer */
-
 @layer components {
-  /* Page container. One place to change the measure of the whole site. */
-  .aw-container {
-    width: 100%;
-    max-width: 78rem;
+
+  /* ------------------------------------------------------- containers */
+
+  .ad-page {
+    padding-inline: 16px;
+    padding-block: 20px 96px; /* bottom room for the phone tab bar */
+    max-width: 88rem;
     margin-inline: auto;
-    /* 360px support: the gutter never drops below 20px. */
-    padding-inline: 1.25rem;
+  }
+  @media (min-width: 1024px) {
+    .ad-page { padding-inline: 32px; padding-block: 32px 48px; }
   }
 
-  @media (min-width: 768px) {
-    .aw-container {
-      padding-inline: 2rem;
-    }
+  .ad-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
   }
 
-  @media (min-width: 1280px) {
-    .aw-container {
-      padding-inline: 2.5rem;
-    }
-  }
+  /* ------------------------------------------------------------ type */
 
-  .aw-container-narrow {
-    width: 100%;
-    max-width: 46rem;
-    margin-inline: auto;
-    padding-inline: 1.25rem;
-  }
-
-  /* Display text helper, for non-heading elements that need the serif. */
-  .aw-display {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-variation-settings: 'opsz' 36, 'SOFT' 0, 'WONK' 1;
-    letter-spacing: -0.018em;
-    line-height: 1.15;
-    color: var(--color-brand-deep);
-    font-variant-numeric: lining-nums;
-  }
-
-  /* The thin gold rule — the signature flourish. Used under section headings
-     and between summary rows, never as a border on everything. */
-  .aw-rule {
-    border: 0;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(
-      to right,
-      var(--color-accent-bright) 0%,
-      var(--color-accent-bright) 2.5rem,
-      var(--color-line) 2.5rem,
-      var(--color-line) 100%
-    );
-  }
-
-  .aw-rule-center {
-    border: 0;
-    height: 2px;
-    width: 3.5rem;
-    border-radius: 2px;
-    margin-inline: auto;
-    background: var(--color-accent-bright);
-  }
-
-  /* Small caps label. The ONE place uppercase tracking is allowed — it was
-     previously also on buttons, table headers, badges and field labels, which
-     is why nothing stood out. */
-  .aw-eyebrow {
-    font-family: var(--font-sans);
+  .ad-eyebrow {
     font-size: var(--text-2xs);
     font-weight: 600;
-    letter-spacing: 0.13em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--color-muted);
-    line-height: 1.4;
   }
 
-  .aw-eyebrow-accent {
-    color: var(--color-accent);
-  }
-
-  /* ---- Buttons --------------------------------------------------- */
-
-  /*
-   * Sentence case, not uppercase.
-   *
-   * The old .aw-btn set text-transform:uppercase with 0.14em tracking AND
-   * font-size 12px. On the primary button that produced dark-green tracked
-   * caps that were effectively unreadable against the dark-green fill — the
-   * shop's main call to action could not be read at all. Now: 15px, weight
-   * 550, normal case, near-white text on brand.
-   */
-  .aw-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.8125rem 1.625rem;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    /*
-     * NO `color` here.
-     *
-     * A `color: var(--color-ink)` on this base class is what made the primary
-     * CTA unreadable: .aw-btn and .aw-btn.aw-btn-primary sit in the same
-     * cascade layer, and the ink colour won, painting #16201a text on the
-     * #14432a fill. Each variant below owns its own colour instead.
-     */
-    font-size: 0.9375rem;
-    font-weight: 550;
-    letter-spacing: -0.005em;
-    line-height: 1.2;
-    cursor: pointer;
-    transition:
-      background-color 180ms ease,
-      border-color 180ms ease,
-      color 180ms ease,
-      box-shadow 180ms ease,
-      transform 120ms ease;
-    text-align: center;
-    min-height: 3rem;
-  }
-
-  .aw-btn:not(:disabled):active {
-    transform: translateY(1px);
-  }
-
-  .aw-btn:disabled,
-  .aw-btn[aria-disabled='true'] {
-    cursor: not-allowed;
-    opacity: 0.45;
-  }
-
-  /*
-   * Doubled class (.aw-btn.aw-btn-primary) on purpose.
-   *
-   * The single-class rule was correct but kept losing: these buttons are
-   * <Link>/<a>, the base layer sets `a { color: inherit }`, and the rendered
-   * CTA came out dark-green-on-dark-green — completely unreadable. Raising
-   * specificity above any single-class or element rule makes the fill and the
-   * text colour inseparable, whatever else is in the cascade.
-   */
-  .aw-btn.aw-btn-primary {
-    background-color: var(--color-brand);
-    color: #fbf9f3;
-    border-color: var(--color-brand);
-    box-shadow: 0 1px 2px rgba(13, 46, 29, 0.18), 0 8px 20px rgba(13, 46, 29, 0.16);
-  }
-
-  .aw-btn.aw-btn-primary:not(:disabled):hover {
-    background-color: var(--color-brand-soft);
-    border-color: var(--color-brand-soft);
-    color: #fbf9f3;
-    box-shadow: 0 2px 4px rgba(13, 46, 29, 0.2), 0 12px 28px rgba(13, 46, 29, 0.22);
-  }
-
-  .aw-btn.aw-btn-outline {
-    background-color: var(--color-surface);
-    color: var(--color-brand);
-    border-color: var(--color-line-strong);
-  }
-
-  .aw-btn.aw-btn-outline:not(:disabled):hover {
-    border-color: var(--color-brand);
-    background-color: var(--color-surface-alt);
-    color: var(--color-brand);
-  }
-
-  /* Gold. For the one moment gold should act as a button — add to cart on a
-     dark ground — not for general use. */
-  .aw-btn.aw-btn-accent {
-    background-color: var(--color-accent-bright);
-    color: #24190a;
-    border-color: var(--color-accent-bright);
-    box-shadow: 0 1px 2px rgba(80, 60, 16, 0.2), 0 8px 20px rgba(80, 60, 16, 0.18);
-  }
-
-  .aw-btn.aw-btn-accent:not(:disabled):hover {
-    background-color: #c09a47;
-    border-color: #c09a47;
-    color: #24190a;
-  }
-
-  .aw-btn-ghost {
-    background: transparent;
-    border-color: transparent;
-    color: var(--color-soft);
-    font-size: var(--text-sm);
-    padding: 0.5rem 0.75rem;
-    min-height: 0;
-  }
-
-  .aw-btn-ghost:not(:disabled):hover {
-    color: var(--color-brand);
-    background-color: var(--color-surface-alt);
-  }
-
-  .aw-btn-danger {
-    background-color: transparent;
-    color: var(--color-danger);
-    border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
-  }
-
-  .aw-btn-danger:not(:disabled):hover {
-    background-color: color-mix(in srgb, var(--color-danger) 8%, transparent);
-    border-color: var(--color-danger);
-  }
-
-  .aw-btn-sm {
-    padding: 0.5rem 1rem;
-    min-height: 2.5rem;
-    font-size: var(--text-sm);
-    border-radius: var(--radius-sm);
-  }
-
-  .aw-btn-lg {
-    padding: 1rem 2rem;
-    min-height: 3.5rem;
-    font-size: 1rem;
-  }
-
-  /* ---- Fields ---------------------------------------------------- */
-
-  .aw-field {
-    display: block;
-    width: 100%;
-    padding: 0.8125rem 0.9375rem;
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-line-strong);
-    border-radius: var(--radius-md);
-    font-size: var(--text-base);
-    color: var(--color-ink);
-    transition:
-      border-color 160ms ease,
-      box-shadow 160ms ease;
-    /* 16px on mobile prevents iOS Safari zooming the whole checkout on
-       focus, which is disorienting mid-form. */
-  }
-
-  .aw-field::placeholder {
-    color: color-mix(in srgb, var(--color-muted) 78%, transparent);
-  }
-
-  .aw-field:hover:not(:disabled) {
-    border-color: var(--color-muted);
-  }
-
-  .aw-field:focus {
-    border-color: var(--color-brand-soft);
-    outline: 2px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
-    outline-offset: 1px;
-  }
-
-  .aw-field:disabled {
-    background-color: var(--color-surface-alt);
-    color: var(--color-muted);
-    cursor: not-allowed;
-  }
-
-  .aw-field-error {
-    border-color: var(--color-danger);
-  }
-
-  .aw-field-error:focus {
-    border-color: var(--color-danger);
-    outline-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
-  }
-
-  /* Sentence case — these were uppercase, competing with the eyebrows. */
-  .aw-label {
-    display: block;
-    font-size: var(--text-sm);
-    font-weight: 550;
-    letter-spacing: 0;
-    color: var(--color-ink);
-    margin-bottom: 0.4375rem;
-  }
-
-  .aw-hint {
-    font-size: var(--text-xs);
-    color: var(--color-muted);
-    margin-top: 0.375rem;
-  }
-
-  .aw-error {
-    font-size: var(--text-xs);
-    font-weight: 500;
-    color: var(--color-danger);
-    margin-top: 0.375rem;
-  }
-
-  /* ---- Surfaces -------------------------------------------------- */
-
-  .aw-card {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-  }
-
-  /* Product tile. The old grid had no containment at all — six flat
-     rectangles with a hairline. This gives the image a real frame that lifts
-     on hover, which is what makes a catalogue feel shoppable. */
-  .aw-tile {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    overflow: hidden;
-    transition:
-      box-shadow 260ms ease,
-      border-color 260ms ease,
-      transform 260ms ease;
-  }
-
-  .aw-tile:hover {
-    box-shadow: var(--shadow-raised);
-    border-color: var(--color-line-strong);
-    transform: translateY(-3px);
-  }
-
-  .aw-price {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-variation-settings: 'opsz' 24, 'SOFT' 0, 'WONK' 0;
-    color: var(--color-accent);
-    font-variant-numeric: lining-nums tabular-nums;
+  .ad-num {
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
   }
 
-  /* Ivory plate behind product photography. Attar bottles are small and
-     dark; an ivory ground with a faint vignette makes them read as objects
-     rather than cut-outs. */
-  .aw-plate {
-    background:
-      radial-gradient(
-        120% 100% at 50% 0%,
-        #ffffff 0%,
-        var(--color-surface-alt) 76%,
-        var(--color-surface-sunk) 100%
-      );
-  }
-
-  .aw-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.25rem 0.5625rem;
-    border-radius: 999px;
-    font-size: var(--text-2xs);
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-    line-height: 1.5;
-  }
-
-  /* Link with a gold underline that grows on hover — the one piece of
-     motion in the nav. */
-  .aw-link-underline {
-    position: relative;
-    display: inline-block;
-  }
-
-  .aw-link-underline::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -3px;
-    width: 100%;
-    height: 1.5px;
-    border-radius: 2px;
-    background-color: var(--color-accent-bright);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 240ms ease;
-  }
-
-  .aw-link-underline:hover::after,
-  .aw-link-underline[data-active='true']::after {
-    transform: scaleX(1);
-  }
-}
-
-/* --------------------------------------------------------------- utility */
-
-@layer utilities {
-  .aw-fade-up {
-    animation: aw-fade-up 620ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-  }
-
-  @keyframes aw-fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(0.75rem);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  /* Skeleton shimmer for loading states. */
-  .aw-skeleton {
-    background: linear-gradient(
-      90deg,
-      var(--color-surface-alt) 25%,
-      #f0eade 37%,
-      var(--color-surface-alt) 63%
-    );
-    background-size: 400% 100%;
-    animation: aw-shimmer 1.4s ease infinite;
-    border-radius: var(--radius-sm);
-  }
-
-  @keyframes aw-shimmer {
-    from {
-      background-position: 100% 50%;
-    }
-    to {
-      background-position: 0 50%;
-    }
-  }
-
-  .aw-tabular {
+  .ad-money {
     font-variant-numeric: tabular-nums;
-  }
-}
-
-/* Print: the order confirmation doubles as a receipt. Not a GST invoice —
-   the shop is not GST registered, so no tax block exists to print. */
-@media print {
-  .aw-no-print {
-    display: none !important;
+    color: var(--color-accent);
+    font-weight: 600;
   }
 
-  body {
-    background: #fff;
-  }
-}
-
-/* ==========================================================================
-   ADMIN ONLY — everything below this line is specific to the staff panel.
-   The rules above are shared verbatim with the storefront.
-   ========================================================================== */
-
-@layer components {
-  /*
-   * Responsive data table.
-   *
-   * The panel had eight tables pinned at min-width 30rem–46rem inside
-   * overflow-x-auto. On a phone that means the orders list is 736px wide on a
-   * 390px screen: staff had to scroll sideways through their main work
-   * surface, with the row's identifying column scrolled out of view.
-   *
-   * Below `lg` each row becomes a stacked card instead. The <table> semantics
-   * are kept for screen readers and for desktop; only the visual box model
-   * changes. Each <td> carries data-label, which is painted as the field name
-   * in card mode — so "₹1,530" is never an unlabelled number on a phone.
-   */
-  .aw-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
+  .ad-mono {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    letter-spacing: -0.01em;
   }
 
-  @media (max-width: 1023px) {
-    .aw-table,
-    .aw-table tbody,
-    .aw-table tr,
-    .aw-table td {
-      display: block;
-      width: 100%;
-    }
+  /* --------------------------------------------------------- buttons */
 
-    /* The header row is meaningless once cells are stacked; data-label on each
-       cell carries the column name instead. Kept in the a11y tree. */
-    .aw-table thead {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    .aw-table tr {
-      border: 1px solid var(--color-line);
-      border-radius: var(--radius-md);
-      background-color: var(--color-surface);
-      padding: 0.25rem 0.875rem;
-      margin-bottom: 0.75rem;
-      box-shadow: var(--shadow-card);
-    }
-
-    .aw-table tr:last-child {
-      margin-bottom: 0;
-    }
-
-    .aw-table td {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.5rem 0;
-      border: 0;
-      border-bottom: 1px solid var(--color-line);
-      text-align: right;
-    }
-
-    .aw-table td:last-child {
-      border-bottom: 0;
-    }
-
-    .aw-table td::before {
-      content: attr(data-label);
-      flex: 0 0 auto;
-      font-size: var(--text-2xs);
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--color-muted);
-      text-align: left;
-    }
-
-    /* A cell with no data-label (an actions cell, say) spans the full width
-       rather than sitting awkwardly against an empty label. */
-    .aw-table td:not([data-label])::before {
-      content: none;
-    }
-
-    .aw-table td:not([data-label]) {
-      justify-content: flex-end;
-      padding-top: 0.75rem;
-    }
-
-    /* The first cell is the row's identity — give it prominence instead of
-       letting it read as just another field. */
-    .aw-table td:first-child {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.125rem;
-      text-align: left;
-      padding-top: 0.75rem;
-      font-size: 0.9375rem;
-    }
-  }
-
-  /*
-   * Touch targets.
-   *
-   * WCAG 2.5.8 asks for 24px minimum; 44px is the comfortable thumb size and
-   * what iOS/Android both recommend. The panel's small buttons were 36px and
-   * its icon buttons 32-36px, which is fiddly when you are holding a parcel in
-   * the other hand.
-   */
-  @media (pointer: coarse) {
-    .aw-btn-sm {
-      min-height: 2.75rem;
-      padding-inline: 1.125rem;
-    }
-
-    .aw-field {
-      min-height: 2.75rem;
-    }
-  }
-}
-
-@layer components {
-  /*
-   * Filter chip (orders / reviews / feedback status tabs).
-   *
-   * These were hand-rolled <button>s carrying `bg-brand text-[#f7f4ea]` when
-   * active, and the active one rendered dark-green-on-dark-green — unreadable,
-   * and it is the DEFAULT tab on the reviews screen. Same cause as the CTA
-   * bug: the unlayered `button { color: inherit }` reset outranks any layered
-   * utility, so the Tailwind text colour never applied. Here the colour is set
-   * by a rule the reset cannot beat, and the chip gets a real touch target.
-   */
-  .aw-chip {
+  .ad-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    white-space: nowrap;
-    min-height: 2.75rem;
-    padding: 0.4375rem 0.875rem;
-    border: 1px solid var(--color-line-strong);
-    border-radius: 999px;
-    background-color: var(--color-surface);
-    color: var(--color-ink);
+    gap: 8px;
+    /* 44px: the whole panel is thumb-operated. */
+    min-height: 44px;
+    padding-inline: 18px;
+    border-radius: var(--radius-sm);
     font-size: var(--text-sm);
     font-weight: 500;
-    line-height: 1.2;
+    transition: background-color 140ms, border-color 140ms, opacity 140ms;
     cursor: pointer;
-    transition:
-      background-color 160ms ease,
-      border-color 160ms ease,
-      color 160ms ease;
+    white-space: nowrap;
+  }
+  .ad-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .ad-btn-primary { background: var(--color-brand); color: #fff; }
+  .ad-btn-primary:not(:disabled):hover { background: var(--color-brand-soft); }
+
+  .ad-btn-outline {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    border: 1px solid var(--color-line-strong);
+  }
+  .ad-btn-outline:not(:disabled):hover { background: var(--color-surface-alt); }
+
+  .ad-btn-danger { background: var(--color-danger); color: #fff; }
+  .ad-btn-danger:not(:disabled):hover { opacity: 0.9; }
+
+  .ad-btn-ghost { background: transparent; color: var(--color-soft); }
+  .ad-btn-ghost:not(:disabled):hover { background: var(--color-surface-alt); }
+
+  .ad-btn-sm { min-height: 36px; padding-inline: 12px; font-size: var(--text-xs); }
+
+  /* ----------------------------------------------------------- forms */
+
+  .ad-label {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-soft);
+    margin-bottom: 6px;
   }
 
-  .aw-chip:hover {
-    border-color: var(--color-brand);
-    color: var(--color-brand);
+  .ad-input, .ad-select, .ad-textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-sm);
+    color: var(--color-ink);
+    /* 16px exactly: anything smaller makes iOS Safari zoom on focus. */
+    font-size: 16px;
+    transition: border-color 140ms, box-shadow 140ms;
+  }
+  @media (min-width: 1024px) {
+    .ad-input, .ad-select, .ad-textarea { font-size: var(--text-sm); }
   }
 
-  .aw-chip[aria-pressed='true'] {
-    background-color: var(--color-brand);
-    border-color: var(--color-brand);
-    color: #fbf9f3;
-  }
-
-  .aw-chip[aria-pressed='true']:hover {
-    background-color: var(--color-brand-soft);
+  .ad-input:focus, .ad-select:focus, .ad-textarea:focus {
+    outline: none;
     border-color: var(--color-brand-soft);
-    color: #fbf9f3;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-soft) 18%, transparent);
   }
 
-  @media (pointer: coarse) {
-    .aw-chip {
-      min-height: 2.75rem;
-      padding-inline: 1.125rem;
+  .ad-input[aria-invalid='true'] { border-color: var(--color-danger); }
+
+  .ad-textarea { min-height: 96px; resize: vertical; line-height: 1.6; }
+
+  .ad-hint { font-size: var(--text-xs); color: var(--color-muted); margin-top: 6px; }
+  .ad-error { font-size: var(--text-xs); color: var(--color-danger); margin-top: 6px; font-weight: 500; }
+
+  /* ----------------------------------------------------------- pills */
+
+  .ad-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .ad-pill-ok     { background: var(--color-ok-bg);     color: var(--color-ok); }
+  .ad-pill-warn   { background: var(--color-warn-bg);   color: var(--color-warn); }
+  .ad-pill-danger { background: var(--color-danger-bg); color: var(--color-danger); }
+  .ad-pill-info   { background: var(--color-info-bg);   color: var(--color-info); }
+  .ad-pill-muted  { background: var(--color-surface-alt); color: var(--color-soft); }
+
+  /* ---------------------------------------------------------- tables */
+
+  .ad-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+  .ad-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--color-surface-alt);
+    border-bottom: 1px solid var(--color-line);
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    white-space: nowrap;
+  }
+  .ad-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--color-line);
+    vertical-align: middle;
+  }
+  .ad-table tbody tr:last-child td { border-bottom: 0; }
+  .ad-table tbody tr:hover { background: var(--color-surface-hover); }
+
+  /* Wide tables scroll inside their own box; the page never scrolls sideways. */
+  .ad-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ------------------------------------------------------ skeletons */
+
+  .ad-skel {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-alt) 25%,
+      color-mix(in srgb, var(--color-surface-alt) 55%, #fff) 50%,
+      var(--color-surface-alt) 75%
+    );
+    background-size: 200% 100%;
+    animation: ad-shimmer 1.4s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+  }
+
+  @keyframes ad-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* --------------------------------------------------------- sheets */
+
+  /* Bottom sheet on a phone, centred dialog on a desktop. */
+  .ad-sheet {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 60;
+    max-height: 92vh;
+    overflow-y: auto;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-sheet);
+    animation: ad-slide-up 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    /* Clears the iPhone home indicator. */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (min-width: 640px) {
+    .ad-sheet {
+      inset: auto;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(34rem, calc(100vw - 48px));
+      border-radius: var(--radius-lg);
+      animation: ad-pop 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
     }
   }
+
+  @keyframes ad-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  @keyframes ad-pop {
+    from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  .ad-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: color-mix(in srgb, var(--color-ink) 45%, transparent);
+    animation: ad-fade 160ms ease-out;
+  }
+  @keyframes ad-fade { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ---------------------------------------------------------- misc */
+
+  .ad-divide > * + * { border-top: 1px solid var(--color-line); }
+
+  .ad-link {
+    color: var(--color-brand-soft);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+  .ad-link:hover { color: var(--color-brand); }
 }

@@ -1,455 +1,276 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
 
-import { AdminCard, AdminError, AdminHeading } from '@/components/admin/AdminShell';
-import { ShipOrderDialog } from '@/components/admin/ShipOrderDialog';
-import { LineSkeleton, StatusBadge } from '@/components/ui';
-import { ApiError, USE_MOCKS, adminApi } from '@/lib/api';
-import { can, getToken, getUser } from '@/lib/admin-auth';
-import { formatDateTime, formatPaise, formatPhone } from '@/lib/format';
-import { mockAdminOrderDetail } from '@/lib/mock-data';
-import type { AdminOrderDetail } from '@/lib/types';
+import { api } from '@/lib/api';
+import { useApi, useAction } from '@/lib/useApi';
+import { getUser, can } from '@/lib/auth';
+import { dateTime, money, humanise } from '@/lib/format';
+import { ShipSheet } from '@/components/ShipSheet';
+import {
+  CardSkeleton, ConfirmSheet, ErrorBox, Field, PageHeader, PaymentPill, Sheet,
+  Spinner, StatusPill, Toast,
+} from '@/components/ui';
+import type { OrderDetail } from '@/lib/types';
 
-/**
- * Order detail, with the three actions that move an order forward:
- * Ship (courier + AWB), Mark delivered, and Cancel (which triggers a refund
- * server-side when the order was paid).
- */
-export default function AdminOrderDetailPage() {
+export default function OrderPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const id = Number(params.id);
 
-  const [order, setOrder] = useState<AdminOrderDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { data, error, loading, reload } = useApi<OrderDetail>((t) => api.order(t, id), [id]);
+  const { run, busy } = useAction();
 
   const [shipOpen, setShipOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
+  const [deliverOpen, setDeliverOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'danger' } | null>(null);
 
-  const user = getUser();
+  const user = typeof window !== 'undefined' ? getUser() : null;
 
-  const load = useCallback(async () => {
-    const token = getToken();
-    if (!token || !Number.isFinite(id)) return;
+  if (loading) return <CardSkeleton rows={6} />;
+  if (error) return <ErrorBox message={error} onRetry={reload} />;
+  if (!data) return null;
 
-    try {
-      setOrder(await adminApi.order(token, id));
-      setError(null);
-    } catch (err) {
-      if (USE_MOCKS || (err instanceof ApiError && err.isNetworkError)) {
-        setOrder(mockAdminOrderDetail);
-      } else {
-        setError(
-          err instanceof ApiError ? err.friendlyMessage : 'Could not load this order.'
-        );
-      }
-    } finally {
-      setLoading(false);
+  const o = data;
+  const shipment = o.shipments[0] ?? null;
+
+  // Mirrors the server's state machine. A shipped order cannot be cancelled —
+  // the parcel is already with the courier, so cancelling would tell the
+  // customer something untrue. That case is a refund after the fact.
+  const canShip = o.status === 'confirmed' || o.status === 'packed';
+  const canDeliver = o.status === 'shipped';
+  const canCancel = ['pending_payment', 'confirmed', 'packed'].includes(o.status);
+
+  async function doDeliver() {
+    const ok = await run((t) => api.deliverOrder(t, id));
+    setDeliverOpen(false);
+    if (ok !== null) {
+      setToast({ msg: 'Marked delivered. The customer has been emailed.', tone: 'ok' });
+      reload();
     }
-  }, [id]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const markDelivered = async () => {
-    const token = getToken();
-    if (!token || !order) return;
-
-    setBusy(true);
-    setError(null);
-    try {
-      setOrder(await adminApi.deliverOrder(token, order.id));
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.friendlyMessage : 'Could not mark this delivered.'
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const cancelOrder = async () => {
-    const token = getToken();
-    if (!token || !order) return;
-
-    if (!cancelReason.trim()) {
-      setError('Give a reason for the cancellation — it goes in the audit log.');
-      return;
-    }
-
-    setBusy(true);
-    setError(null);
-    try {
-      setOrder(await adminApi.cancelOrder(token, order.id, cancelReason.trim()));
-      setCancelOpen(false);
-      setCancelReason('');
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.friendlyMessage : 'Could not cancel this order.'
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div>
-        <AdminHeading title="Order" />
-        <LineSkeleton className="h-96" />
-      </div>
-    );
   }
 
-  if (!order) {
-    return (
-      <div>
-        <AdminHeading title="Order" />
-        <AdminError message={error ?? 'Order not found.'} />
-        <Link href="/orders" className="aw-btn aw-btn-outline aw-btn-sm">
-          Back to orders
-        </Link>
-      </div>
-    );
+  async function doCancel() {
+    if (reason.trim().length < 3) return;
+    const ok = await run((t) => api.cancelOrder(t, id, reason.trim()));
+    setCancelOpen(false);
+    if (ok !== null) {
+      setToast({ msg: 'Order cancelled. Stock returned and the customer emailed.', tone: 'ok' });
+      setReason('');
+      reload();
+    }
   }
-
-  const canShip = ['confirmed', 'packed'].includes(order.status);
-  const canDeliver = order.status === 'shipped';
-  const canCancel = !['delivered', 'cancelled', 'refunded'].includes(order.status);
 
   return (
-    <div>
-      <AdminHeading
-        title={order.orderNumber}
-        description={`Placed ${formatDateTime(order.placedAt ?? order.createdAt)}`}
-        action={
-          <Link href="/orders" className="aw-btn aw-btn-ghost aw-btn-sm">
-            ← All orders
-          </Link>
-        }
+    <>
+      <div className="mb-4">
+        <Link href="/orders" className="ad-link text-sm">
+          ← All orders
+        </Link>
+      </div>
+
+      <PageHeader
+        title={o.orderNumber}
+        subtitle={`Placed ${dateTime(o.placedAt ?? o.createdAt)}`}
       />
 
-      <AdminError message={error} />
-
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <StatusBadge status={order.status} />
-        <StatusBadge status={order.paymentStatus} />
-        <span className="aw-badge bg-surface-alt text-muted">
-          {order.shipZone === 'kolkata' ? 'Kolkata' : 'Rest of India'}
+      <div className="mb-5 flex flex-wrap gap-2">
+        <StatusPill status={o.status} />
+        <PaymentPill status={o.paymentStatus} />
+        <span className="ad-pill ad-pill-muted">
+          {o.shipZone === 'kolkata' ? 'Kolkata' : 'Rest of India'}
         </span>
       </div>
 
       {/* ------------------------------------------------------- actions */}
-      <div className="mb-6 flex flex-wrap gap-3">
-        {canShip && can(user, 'orders.ship') ? (
-          <button
-            type="button"
-            onClick={() => setShipOpen(true)}
-            className="aw-btn aw-btn-primary aw-btn-sm"
-          >
-            Ship this order
-          </button>
-        ) : null}
-
-        {canDeliver && can(user, 'orders.ship') ? (
-          <button
-            type="button"
-            onClick={() => void markDelivered()}
-            disabled={busy}
-            className="aw-btn aw-btn-outline aw-btn-sm"
-          >
-            {busy ? 'Working…' : 'Mark delivered'}
-          </button>
-        ) : null}
-
-        {canCancel && can(user, 'orders.cancel') ? (
-          <button
-            type="button"
-            onClick={() => setCancelOpen(true)}
-            className="aw-btn aw-btn-danger aw-btn-sm"
-          >
-            Cancel order
-          </button>
-        ) : null}
-      </div>
+      {(canShip || canDeliver || canCancel) && (
+        <div className="mb-6 flex flex-wrap gap-3">
+          {canShip ? (
+            <button type="button" onClick={() => setShipOpen(true)} className="ad-btn ad-btn-primary flex-1 sm:flex-none">
+              Ship this order
+            </button>
+          ) : null}
+          {canDeliver ? (
+            <button type="button" onClick={() => setDeliverOpen(true)} className="ad-btn ad-btn-primary flex-1 sm:flex-none">
+              Mark delivered
+            </button>
+          ) : null}
+          {canCancel && can(user, 'manager') ? (
+            <button type="button" onClick={() => setCancelOpen(true)} className="ad-btn ad-btn-outline flex-1 sm:flex-none">
+              Cancel order
+            </button>
+          ) : null}
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* ------------------------------------------------------- items */}
-        <div className="lg:col-span-2">
-          <AdminCard title="Items">
-            <div className="overflow-x-auto">
-              <table className="aw-table">
-                <thead>
-                  <tr className="border-b border-line">
-                    <th scope="col" className="aw-eyebrow py-2 pr-3 text-[0.5625rem]">Product</th>
-                    <th scope="col" className="aw-eyebrow py-2 pr-3 text-[0.5625rem]">Size</th>
-                    <th scope="col" className="aw-eyebrow py-2 pr-3 text-[0.5625rem]">SKU</th>
-                    <th scope="col" className="aw-eyebrow py-2 pr-3 text-right text-[0.5625rem]">Unit</th>
-                    <th scope="col" className="aw-eyebrow py-2 pr-3 text-right text-[0.5625rem]">Qty</th>
-                    <th scope="col" className="aw-eyebrow py-2 text-right text-[0.5625rem]">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {order.items.map((item, i) => (
-                    <tr key={`${item.sku}-${i}`} className="border-b border-line last:border-0">
-                      <td className="py-3 pr-3 text-[0.8125rem]">{item.productName}</td>
-                      <td data-label="Size" className="py-3 pr-3 text-[0.8125rem]">{item.sizeMl} ml</td>
-                      <td data-label="SKU" className="aw-tabular py-3 pr-3 text-xs text-muted">{item.sku}</td>
-                      <td data-label="Unit" className="aw-tabular py-3 pr-3 text-right text-[0.8125rem]">
-                        {formatPaise(item.unitPricePaise, { compact: true })}
-                      </td>
-                      <td data-label="Qty" className="aw-tabular py-3 pr-3 text-right text-[0.8125rem]">
-                        {item.quantity}
-                      </td>
-                      <td data-label="Total" className="aw-tabular py-3 text-right text-[0.8125rem]">
-                        {formatPaise(item.lineTotalPaise, { compact: true })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <section className="ad-card overflow-hidden lg:col-span-2">
+          <h2 className="border-b border-[color:var(--color-line)] px-4 py-3 text-base">Items</h2>
+          <ul className="ad-divide">
+            {o.items.map((it) => (
+              <li key={it.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{it.productName}</p>
+                  <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">
+                    {it.sizeMl}ml · {it.sku} · {money(it.unitPricePaise, { compact: true })} each
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="ad-num text-sm">× {it.quantity}</p>
+                  <p className="ad-money text-sm">{money(it.lineTotalPaise, { compact: true })}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="border-t border-[color:var(--color-line)] bg-[color:var(--color-surface-alt)] px-4 py-3">
+            <Field label="Subtotal">{money(o.subtotalPaise)}</Field>
+            {o.discountPaise > 0 ? (
+              <Field label={`Discount${o.couponCode ? ` (${o.couponCode})` : ''}`}>
+                −{money(o.discountPaise)}
+              </Field>
+            ) : null}
+            <Field label="Shipping">{money(o.shippingPaise)}</Field>
+            <div className="mt-1 flex items-baseline justify-between border-t border-[color:var(--color-line)] pt-2">
+              <span className="text-sm font-semibold">Total</span>
+              <span className="ad-money text-lg">{money(o.totalPaise)}</span>
             </div>
+          </div>
+        </section>
 
-            <dl className="mt-5 space-y-2 border-t border-line pt-4">
-              <SummaryRow label="Subtotal" value={formatPaise(order.subtotalPaise, { compact: true })} />
-              {order.discountPaise > 0 ? (
-                <SummaryRow
-                  label={order.couponCode ? `Discount (${order.couponCode})` : 'Discount'}
-                  value={`−${formatPaise(order.discountPaise, { compact: true })}`}
-                />
-              ) : null}
-              <SummaryRow label="Shipping" value={formatPaise(order.shippingPaise, { compact: true })} />
-              <div className="flex items-baseline justify-between gap-4 border-t border-line pt-2">
-                <dt className="text-[0.875rem] font-medium">Total</dt>
-                <dd className="aw-price text-lg">
-                  {formatPaise(order.totalPaise, { compact: true })}
-                </dd>
-              </div>
-            </dl>
-            {/* No tax row: the shop is not GST registered. */}
-          </AdminCard>
-
-          {order.customerNote ? (
-            <AdminCard title="Customer note" className="mt-5">
-              <p className="text-[0.8125rem] leading-relaxed text-muted">
-                {order.customerNote}
-              </p>
-            </AdminCard>
-          ) : null}
-        </div>
-
-        {/* ---------------------------------------------------- sidebar */}
         <div className="space-y-5">
-          <AdminCard title="Deliver to">
-            <address className="text-[0.8125rem] leading-relaxed not-italic">
-              <span className="font-medium">{order.shippingAddress.fullName}</span>
+          {/* --------------------------------------------------- delivery */}
+          <section className="ad-card p-4">
+            <h2 className="mb-3 text-base">Deliver to</h2>
+            <p className="text-sm font-medium">{o.shipFullName}</p>
+            <address className="mt-1 text-sm not-italic leading-relaxed text-[color:var(--color-soft)]">
+              {o.shipLine1}
+              {o.shipLine2 ? <><br />{o.shipLine2}</> : null}
+              {o.shipLandmark ? <><br />Near {o.shipLandmark}</> : null}
               <br />
-              <span className="text-muted">{order.shippingAddress.line1}</span>
-              {order.shippingAddress.line2 ? (
-                <>
-                  <br />
-                  <span className="text-muted">{order.shippingAddress.line2}</span>
-                </>
-              ) : null}
-              {order.shippingAddress.landmark ? (
-                <>
-                  <br />
-                  <span className="text-muted">Near {order.shippingAddress.landmark}</span>
-                </>
-              ) : null}
-              <br />
-              <span className="text-muted">
-                {order.shippingAddress.city}
-                {order.shippingAddress.district ? `, ${order.shippingAddress.district}` : ''}
-              </span>
-              <br />
-              <span className="text-muted">
-                {order.shippingAddress.state} {order.shippingAddress.pincode}
-              </span>
+              {o.shipCity}, {o.shipState} {o.shipPincode}
             </address>
 
-            <div className="mt-4 space-y-1 border-t border-line pt-3">
-              <p className="text-[0.8125rem]">
-                <a href={`tel:+91${order.shipPhone}`} className="hover:text-brand">
-                  {formatPhone(order.shipPhone)}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a href={`tel:+91${o.shipPhone}`} className="ad-btn ad-btn-outline ad-btn-sm">
+                Call {o.shipPhone}
+              </a>
+              {o.shipAltPhone ? (
+                <a href={`tel:+91${o.shipAltPhone}`} className="ad-btn ad-btn-outline ad-btn-sm">
+                  Alt {o.shipAltPhone}
                 </a>
-                {order.shippingAddress.altPhone ? (
-                  <>
-                    {' · '}
-                    <a
-                      href={`tel:+91${order.shippingAddress.altPhone}`}
-                      className="hover:text-brand"
-                    >
-                      {formatPhone(order.shippingAddress.altPhone)}
-                    </a>
-                  </>
-                ) : null}
-              </p>
-              <p className="text-[0.8125rem] break-all">
-                <a href={`mailto:${order.shipEmail}`} className="hover:text-brand">
-                  {order.shipEmail}
-                </a>
-              </p>
+              ) : null}
             </div>
-          </AdminCard>
+            <p className="mt-3 break-all text-xs text-[color:var(--color-muted)]">{o.shipEmail}</p>
 
-          {order.shipment ? (
-            <AdminCard title="Shipment">
-              <dl className="space-y-2.5 text-[0.8125rem]">
-                <div>
-                  <dt className="aw-eyebrow mb-0.5">Courier</dt>
-                  <dd>{order.shipment.courierName}</dd>
-                </div>
-                <div>
-                  <dt className="aw-eyebrow mb-0.5">AWB</dt>
-                  <dd className="aw-tabular break-all select-all">
-                    {order.shipment.trackingNumber}
-                  </dd>
-                </div>
-                {order.shipment.shippedAt ? (
-                  <div>
-                    <dt className="aw-eyebrow mb-0.5">Dispatched</dt>
-                    <dd className="text-muted">{formatDateTime(order.shipment.shippedAt)}</dd>
-                  </div>
-                ) : null}
-              </dl>
-              {order.shipment.trackingUrl ? (
+            {o.customerNote ? (
+              <div className="mt-4 rounded-md bg-[color:var(--color-warn-bg)] p-3">
+                <p className="ad-eyebrow text-[color:var(--color-warn)]">Customer note</p>
+                <p className="mt-1 text-sm">{o.customerNote}</p>
+              </div>
+            ) : null}
+          </section>
+
+          {/* --------------------------------------------------- shipment */}
+          {shipment ? (
+            <section className="ad-card p-4">
+              <h2 className="mb-3 text-base">Shipment</h2>
+              <Field label="Courier">{shipment.courierName}</Field>
+              <Field label="Tracking">
+                <span className="ad-mono select-all">{shipment.trackingNumber}</span>
+              </Field>
+              <Field label="Shipped">{dateTime(shipment.shippedAt)}</Field>
+              {shipment.trackingUrl ? (
                 <a
-                  href={order.shipment.trackingUrl}
+                  href={shipment.trackingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="aw-btn aw-btn-outline aw-btn-sm mt-4 w-full"
+                  className="ad-btn ad-btn-outline ad-btn-sm mt-3 w-full"
                 >
-                  Open tracking
+                  {shipment.supportsDeepLink ? 'Track parcel' : 'Open courier site'}
                 </a>
               ) : null}
-            </AdminCard>
+            </section>
           ) : null}
 
-          {order.payment ? (
-            <AdminCard title="Payment">
-              <dl className="space-y-2.5 text-[0.8125rem]">
-                <div>
-                  <dt className="aw-eyebrow mb-0.5">Method</dt>
-                  <dd className="uppercase">{order.payment.method ?? '—'}</dd>
-                </div>
-                <div>
-                  <dt className="aw-eyebrow mb-0.5">Razorpay payment</dt>
-                  <dd className="aw-tabular text-xs break-all text-muted">
-                    {order.payment.razorpayPaymentId ?? '—'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="aw-eyebrow mb-0.5">Razorpay order</dt>
-                  <dd className="aw-tabular text-xs break-all text-muted">
-                    {order.payment.razorpayOrderId ?? '—'}
-                  </dd>
-                </div>
-                {order.payment.errorDescription ? (
-                  <div>
-                    <dt className="aw-eyebrow mb-0.5">Error</dt>
-                    <dd className="text-xs text-danger">{order.payment.errorDescription}</dd>
-                  </div>
-                ) : null}
-              </dl>
-            </AdminCard>
-          ) : null}
-
-          {order.cancelReason ? (
-            <AdminCard title="Cancellation">
-              <p className="text-[0.8125rem] text-muted">{order.cancelReason}</p>
-              {order.cancelledAt ? (
-                <p className="mt-1 text-xs text-muted">
-                  {formatDateTime(order.cancelledAt)}
-                </p>
-              ) : null}
-            </AdminCard>
+          {o.cancelReason ? (
+            <section className="ad-card border-[color:var(--color-danger)]/25 bg-[color:var(--color-danger-bg)] p-4">
+              <p className="ad-eyebrow text-[color:var(--color-danger)]">Cancelled</p>
+              <p className="mt-1 text-sm">{o.cancelReason}</p>
+            </section>
           ) : null}
         </div>
       </div>
 
-      {/* --------------------------------------------------- ship dialog */}
-      {shipOpen ? (
-        <ShipOrderDialog
-          orderId={order.id}
-          orderNumber={order.orderNumber}
-          onClose={() => setShipOpen(false)}
-          onShipped={() => {
-            setShipOpen(false);
-            void load();
-          }}
-        />
-      ) : null}
+      {/* --------------------------------------------------------- sheets */}
+      <ShipSheet
+        open={shipOpen}
+        onClose={() => setShipOpen(false)}
+        orderId={id}
+        orderNumber={o.orderNumber}
+        onShipped={() => {
+          setToast({ msg: 'Shipped. Tracking details emailed to the customer.', tone: 'ok' });
+          reload();
+        }}
+      />
 
-      {/* ------------------------------------------------- cancel dialog */}
-      {cancelOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color-mix(in_srgb,var(--color-ink)_45%,transparent)] p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cancel-title"
-            className="aw-card w-full max-w-md p-6"
-          >
-            <h2 id="cancel-title" className="text-xl">
-              Cancel {order.orderNumber}?
-            </h2>
-            <p className="mt-2 text-[0.8125rem] leading-relaxed text-muted">
-              {order.paymentStatus === 'paid'
-                ? 'This refunds the customer through Razorpay and returns the stock. It cannot be undone.'
-                : 'This releases the reserved stock. It cannot be undone.'}
-            </p>
+      <ConfirmSheet
+        open={deliverOpen}
+        onClose={() => setDeliverOpen(false)}
+        onConfirm={doDeliver}
+        busy={busy}
+        title="Mark as delivered?"
+        message="This emails the customer a thank-you and invites them to review what they bought. It cannot be undone."
+        confirmLabel="Mark delivered"
+      />
 
-            <div className="mt-5">
-              <label htmlFor="cancel-reason" className="aw-label">
-                Reason <span className="text-accent">*</span>
-              </label>
-              <textarea
-                id="cancel-reason"
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                rows={3}
-                className="aw-field resize-y"
-                placeholder="e.g. Customer requested cancellation by phone"
-              />
-            </div>
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
-              <button
-                type="button"
-                onClick={() => void cancelOrder()}
-                disabled={busy || !cancelReason.trim()}
-                className="aw-btn aw-btn-danger sm:flex-1"
-              >
-                {busy ? 'Cancelling…' : 'Cancel the order'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCancelOpen(false)}
-                disabled={busy}
-                className="aw-btn aw-btn-outline"
-              >
-                Keep it
-              </button>
-            </div>
+      <Sheet
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        title="Cancel this order?"
+        footer={
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setCancelOpen(false)} className="ad-btn ad-btn-outline flex-1" disabled={busy}>
+              Keep it
+            </button>
+            <button
+              type="button"
+              onClick={doCancel}
+              disabled={busy || reason.trim().length < 3}
+              className="ad-btn ad-btn-danger flex-1"
+            >
+              {busy ? <Spinner className="h-4 w-4" /> : null}
+              Cancel order
+            </button>
           </div>
+        }
+      >
+        <p className="text-sm leading-relaxed text-[color:var(--color-soft)]">
+          Stock goes back on the shelf and the customer is emailed.
+          {o.paymentStatus === 'paid'
+            ? ' Because this order is paid, a Razorpay refund is issued automatically — it reaches them in 5–7 working days.'
+            : ''}
+        </p>
+        <div className="mt-4">
+          <label htmlFor="reason" className="ad-label">
+            Reason (the customer sees this)
+          </label>
+          <input
+            id="reason"
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g. out of stock, customer requested"
+            className="ad-input"
+          />
         </div>
-      ) : null}
-    </div>
-  );
-}
+      </Sheet>
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-[0.8125rem] text-muted">{label}</dt>
-      <dd className="aw-tabular text-[0.8125rem]">{value}</dd>
-    </div>
+      {toast ? <Toast message={toast.msg} tone={toast.tone} onDismiss={() => setToast(null)} /> : null}
+    </>
   );
 }

@@ -1,343 +1,337 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { AdminCard, AdminEmpty, AdminError, AdminHeading } from '@/components/admin/AdminShell';
-import { LineSkeleton } from '@/components/ui';
-import { ApiError, adminApi } from '@/lib/api';
-import { can, getToken, getUser } from '@/lib/admin-auth';
-import { formatDate, formatPaise, rupeesToPaise } from '@/lib/format';
-import type { Coupon, DiscountType } from '@/lib/types';
+import { api } from '@/lib/api';
+import { useAction, useApi } from '@/lib/useApi';
+import { dateOnly, money, toPaise, toRupeeInput } from '@/lib/format';
+import {
+  CardSkeleton, ConfirmSheet, EmptyState, ErrorBox, PageHeader, Sheet, Spinner, Toast,
+} from '@/components/ui';
+import type { Coupon, Page } from '@/lib/types';
 
-export default function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<Coupon[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [busy, setBusy] = useState(false);
+export default function CouponsPage() {
+  const { data, error, loading, reload } = useApi<Page<Coupon>>((t) => api.coupons(t, { limit: 50 }));
+  const { run, busy } = useAction();
 
-  const [code, setCode] = useState('');
-  const [description, setDescription] = useState('');
-  const [discountType, setDiscountType] = useState<DiscountType>('percent');
-  const [discountValue, setDiscountValue] = useState('');
-  const [maxDiscount, setMaxDiscount] = useState('');
-  const [minOrder, setMinOrder] = useState('');
-  const [usageLimit, setUsageLimit] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
+  const [editing, setEditing] = useState<Coupon | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<Coupon | null>(null);
+  const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'danger' } | null>(null);
 
-  const user = getUser();
-  const editable = can(user, 'coupons.edit');
-
-  const load = useCallback(async () => {
-    const token = getToken();
-    if (!token) return;
-    try {
-      const result = await adminApi.coupons(token);
-      setCoupons(result.items ?? []);
-      setError(null);
-    } catch (err) {
-      if (err instanceof ApiError && err.isNetworkError) {
-        setCoupons([]);
-      } else {
-        setError(err instanceof ApiError ? err.friendlyMessage : 'Could not load coupons.');
-      }
-    } finally {
-      setLoading(false);
+  async function doDelete() {
+    if (!deleting) return;
+    const ok = await run((t) => api.deleteCoupon(t, deleting.id));
+    setDeleting(null);
+    if (ok !== null) {
+      setToast({ msg: `${deleting.code} removed.`, tone: 'ok' });
+      reload();
     }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const create = async () => {
-    const token = getToken();
-    if (!token) return;
-
-    if (!code.trim() || !discountValue.trim()) {
-      setError('A coupon needs a code and a discount value.');
-      return;
-    }
-
-    setBusy(true);
-    setError(null);
-    try {
-      await adminApi.createCoupon(token, {
-        code: code.trim().toUpperCase(),
-        description: description.trim() || null,
-        discountType,
-        // Percent is a whole number (10 = 10%); fixed is paise.
-        discountValue:
-          discountType === 'percent'
-            ? Math.floor(Number(discountValue))
-            : rupeesToPaise(discountValue),
-        maxDiscountPaise: maxDiscount.trim() ? rupeesToPaise(maxDiscount) : null,
-        minOrderPaise: minOrder.trim() ? rupeesToPaise(minOrder) : 0,
-        usageLimit: usageLimit.trim() ? Math.floor(Number(usageLimit)) : null,
-        expiresAt: expiresAt || null,
-        isActive: true,
-      });
-      setCreating(false);
-      setCode('');
-      setDescription('');
-      setDiscountValue('');
-      setMaxDiscount('');
-      setMinOrder('');
-      setUsageLimit('');
-      setExpiresAt('');
-      await load();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.friendlyMessage : 'Could not create that coupon.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const toggle = async (coupon: Coupon) => {
-    const token = getToken();
-    if (!token) return;
-    setBusy(true);
-    try {
-      await adminApi.updateCoupon(token, coupon.id, { isActive: !coupon.isActive });
-      await load();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.friendlyMessage : 'Could not update that coupon.');
-    } finally {
-      setBusy(false);
-    }
-  };
+  }
 
   return (
-    <div>
-      <AdminHeading
+    <>
+      <PageHeader
         title="Coupons"
-        description="Discount codes, their limits and how often they have been used."
+        subtitle="Discount codes customers type at checkout."
         action={
-          editable ? (
-            <button
-              type="button"
-              onClick={() => setCreating((v) => !v)}
-              className="aw-btn aw-btn-primary aw-btn-sm"
-            >
-              {creating ? 'Close' : 'New coupon'}
-            </button>
-          ) : null
+          <button type="button" onClick={() => setEditing('new')} className="ad-btn ad-btn-primary">
+            New coupon
+          </button>
         }
       />
 
-      <AdminError message={error} />
+      {loading ? (
+        <CardSkeleton rows={3} />
+      ) : error ? (
+        <ErrorBox message={error} onRetry={reload} />
+      ) : !data || data.items.length === 0 ? (
+        <EmptyState
+          title="No coupons yet"
+          message="Create a code like WELCOME10 to give a percentage or flat discount."
+          action={
+            <button type="button" onClick={() => setEditing('new')} className="ad-btn ad-btn-primary">
+              Create one
+            </button>
+          }
+        />
+      ) : (
+        <div className="space-y-3">
+          {data.items.map((c) => {
+            const expired = c.expiresAt ? new Date(c.expiresAt) < new Date() : false;
+            const exhausted = c.usageLimit != null && c.usedCount >= c.usageLimit;
 
-      {creating ? (
-        <AdminCard title="New coupon" className="mb-5">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label htmlFor="c-code" className="aw-label">
-                Code <span className="text-accent">*</span>
-              </label>
-              <input
-                id="c-code"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                className="aw-field aw-tabular uppercase"
-                placeholder="PUJA10"
-              />
-            </div>
+            return (
+              <div key={c.id} className="ad-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="ad-mono text-base font-semibold">{c.code}</p>
+                    <p className="mt-1 text-sm text-[color:var(--color-soft)]">
+                      {c.discountType === 'percent'
+                        ? `${c.discountValue}% off`
+                        : `${money(c.discountValue, { compact: true })} off`}
+                      {c.maxDiscountPaise
+                        ? ` (max ${money(c.maxDiscountPaise, { compact: true })})`
+                        : ''}
+                      {c.minOrderPaise > 0
+                        ? ` · min order ${money(c.minOrderPaise, { compact: true })}`
+                        : ''}
+                    </p>
+                  </div>
+                  <span
+                    className={`ad-pill shrink-0 ${
+                      !c.isActive || expired || exhausted ? 'ad-pill-muted' : 'ad-pill-ok'
+                    }`}
+                  >
+                    {!c.isActive ? 'Off' : expired ? 'Expired' : exhausted ? 'Used up' : 'Live'}
+                  </span>
+                </div>
 
-            <div>
-              <label htmlFor="c-type" className="aw-label">
-                Type
-              </label>
-              <select
-                id="c-type"
-                value={discountType}
-                onChange={(e) => setDiscountType(e.target.value as DiscountType)}
-                className="aw-field"
-              >
-                <option value="percent">Percentage off</option>
-                <option value="fixed">Fixed amount off</option>
-              </select>
-            </div>
+                <p className="mt-2 text-xs text-[color:var(--color-muted)]">
+                  Used {c.usedCount}
+                  {c.usageLimit != null ? ` of ${c.usageLimit}` : ' times'}
+                  {c.expiresAt ? ` · expires ${dateOnly(c.expiresAt)}` : ''}
+                </p>
 
-            <div>
-              <label htmlFor="c-value" className="aw-label">
-                {discountType === 'percent' ? 'Percent off' : 'Amount off (₹)'}{' '}
-                <span className="text-accent">*</span>
-              </label>
-              <input
-                id="c-value"
-                value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value.replace(/[^\d.]/g, ''))}
-                inputMode="decimal"
-                className="aw-field aw-tabular"
-                placeholder={discountType === 'percent' ? '10' : '100'}
-              />
-            </div>
-
-            {discountType === 'percent' ? (
-              <div>
-                <label htmlFor="c-max" className="aw-label">
-                  Cap the discount at (₹)
-                </label>
-                <input
-                  id="c-max"
-                  value={maxDiscount}
-                  onChange={(e) => setMaxDiscount(e.target.value.replace(/[^\d.]/g, ''))}
-                  inputMode="decimal"
-                  className="aw-field aw-tabular"
-                  placeholder="Optional"
-                />
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditing(c)}
+                    className="ad-btn ad-btn-outline ad-btn-sm"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleting(c)}
+                    className="ad-btn ad-btn-ghost ad-btn-sm text-[color:var(--color-danger)]"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            ) : null}
+            );
+          })}
+        </div>
+      )}
 
-            <div>
-              <label htmlFor="c-min" className="aw-label">
-                Minimum order (₹)
-              </label>
-              <input
-                id="c-min"
-                value={minOrder}
-                onChange={(e) => setMinOrder(e.target.value.replace(/[^\d.]/g, ''))}
-                inputMode="decimal"
-                className="aw-field aw-tabular"
-                placeholder="0"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="c-limit" className="aw-label">
-                Total uses allowed
-              </label>
-              <input
-                id="c-limit"
-                value={usageLimit}
-                onChange={(e) => setUsageLimit(e.target.value.replace(/[^\d]/g, ''))}
-                inputMode="numeric"
-                className="aw-field aw-tabular"
-                placeholder="Unlimited"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="c-expires" className="aw-label">
-                Expires
-              </label>
-              <input
-                id="c-expires"
-                type="date"
-                value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
-                className="aw-field"
-              />
-            </div>
-
-            <div className="sm:col-span-2 lg:col-span-3">
-              <label htmlFor="c-desc" className="aw-label">
-                Description
-              </label>
-              <input
-                id="c-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="aw-field"
-                placeholder="Internal note — what this code is for"
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void create()}
-            disabled={busy}
-            className="aw-btn aw-btn-primary aw-btn-sm mt-5"
-          >
-            {busy ? 'Creating…' : 'Create coupon'}
-          </button>
-        </AdminCard>
+      {editing ? (
+        <CouponSheet
+          coupon={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={(msg) => {
+            setToast({ msg, tone: 'ok' });
+            reload();
+          }}
+        />
       ) : null}
 
-      <div className="aw-card overflow-hidden">
-        {loading ? (
-          <div className="space-y-2 p-5">
-            {Array.from({ length: 4 }, (_, i) => (
-              <LineSkeleton key={i} className="h-12" />
-            ))}
-          </div>
-        ) : !coupons || coupons.length === 0 ? (
-          <AdminEmpty message="No coupons yet." />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="aw-table">
-              <thead>
-                <tr className="border-b border-line bg-surface-alt">
-                  <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Code</th>
-                  <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Discount</th>
-                  <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Minimum</th>
-                  <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Used</th>
-                  <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Expires</th>
-                  <th scope="col" className="aw-eyebrow px-4 py-3 text-[0.5625rem]">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coupons.map((coupon) => (
-                  <tr key={coupon.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3">
-                      <span className="aw-tabular text-[0.875rem] font-medium">
-                        {coupon.code}
-                      </span>
-                      {coupon.description ? (
-                        <p className="text-xs text-muted">{coupon.description}</p>
-                      ) : null}
-                    </td>
-                    <td data-label="Discount" className="px-4 py-3 text-[0.8125rem]">
-                      {coupon.discountType === 'percent'
-                        ? `${coupon.discountValue}%`
-                        : formatPaise(coupon.discountValue, { compact: true })}
-                      {coupon.maxDiscountPaise ? (
-                        <span className="text-xs text-muted">
-                          {' '}
-                          max {formatPaise(coupon.maxDiscountPaise, { compact: true })}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td data-label="Minimum" className="aw-tabular px-4 py-3 text-[0.8125rem] text-muted">
-                      {coupon.minOrderPaise
-                        ? formatPaise(coupon.minOrderPaise, { compact: true })
-                        : '—'}
-                    </td>
-                    <td data-label="Used" className="aw-tabular px-4 py-3 text-[0.8125rem]">
-                      {coupon.usedCount}
-                      {coupon.usageLimit ? ` / ${coupon.usageLimit}` : ''}
-                    </td>
-                    <td data-label="Expires" className="px-4 py-3 text-xs text-muted">
-                      {coupon.expiresAt ? formatDate(coupon.expiresAt) : 'No expiry'}
-                    </td>
-                    <td data-label="Status" className="px-4 py-3">
-                      {editable ? (
-                        <button
-                          type="button"
-                          onClick={() => void toggle(coupon)}
-                          disabled={busy}
-                          className={`aw-badge cursor-pointer ${
-                            coupon.isActive
-                              ? 'bg-[color-mix(in_srgb,var(--color-brand-soft)_14%,transparent)] text-brand-soft'
-                              : 'bg-surface-alt text-muted'
-                          }`}
-                        >
-                          {coupon.isActive ? 'Active' : 'Inactive'}
-                        </button>
-                      ) : (
-                        <span className="aw-badge bg-surface-alt text-muted">
-                          {coupon.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <ConfirmSheet
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={doDelete}
+        busy={busy}
+        danger
+        title={`Delete ${deleting?.code ?? ''}?`}
+        message="Customers can no longer use this code. Orders that already used it keep their discount."
+        confirmLabel="Delete"
+      />
+
+      {toast ? <Toast message={toast.msg} tone={toast.tone} onDismiss={() => setToast(null)} /> : null}
+    </>
+  );
+}
+
+function CouponSheet({
+  coupon,
+  onClose,
+  onSaved,
+}: {
+  coupon: Coupon | null;
+  onClose: () => void;
+  onSaved: (msg: string) => void;
+}) {
+  const { run, busy, error } = useAction();
+  const isNew = !coupon;
+
+  const [code, setCode] = useState(coupon?.code ?? '');
+  const [type, setType] = useState<'percent' | 'fixed'>(coupon?.discountType ?? 'percent');
+  const [value, setValue] = useState(
+    coupon
+      ? coupon.discountType === 'percent'
+        ? String(coupon.discountValue)
+        : toRupeeInput(coupon.discountValue)
+      : '',
+  );
+  const [maxDiscount, setMaxDiscount] = useState(toRupeeInput(coupon?.maxDiscountPaise ?? null));
+  const [minOrder, setMinOrder] = useState(toRupeeInput(coupon?.minOrderPaise ?? null));
+  const [limit, setLimit] = useState(coupon?.usageLimit != null ? String(coupon.usageLimit) : '');
+  const [expires, setExpires] = useState(coupon?.expiresAt?.slice(0, 10) ?? '');
+  const [active, setActive] = useState(coupon?.isActive ?? true);
+
+  const numValue = Number(value) || 0;
+  const valid =
+    code.trim().length >= 3 &&
+    numValue > 0 &&
+    (type !== 'percent' || numValue <= 100);
+
+  async function save() {
+    const payload = {
+      code: code.trim().toUpperCase(),
+      discount_type: type,
+      discount_value: type === 'percent' ? numValue : toPaise(value),
+      max_discount_paise: type === 'percent' && maxDiscount ? toPaise(maxDiscount) : null,
+      min_order_paise: minOrder ? toPaise(minOrder) : 0,
+      usage_limit: limit ? Number(limit) : null,
+      expires_at: expires || null,
+      is_active: active,
+    };
+
+    const ok = await run((t) =>
+      isNew ? api.createCoupon(t, payload) : api.updateCoupon(t, coupon.id, payload),
+    );
+    if (ok !== null) {
+      onSaved(isNew ? `${payload.code} created.` : `${payload.code} saved.`);
+      onClose();
+    }
+  }
+
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={isNew ? 'New coupon' : `Edit ${coupon.code}`}
+      footer={
+        <div className="flex gap-3">
+          <button type="button" onClick={onClose} className="ad-btn ad-btn-outline flex-1" disabled={busy}>
+            Cancel
+          </button>
+          <button type="button" onClick={save} disabled={busy || !valid} className="ad-btn ad-btn-primary flex-1">
+            {busy ? <Spinner className="h-4 w-4" /> : null}
+            {isNew ? 'Create' : 'Save'}
+          </button>
+        </div>
+      }
+    >
+      <div>
+        <label htmlFor="code" className="ad-label">Code</label>
+        <input
+          id="code"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="WELCOME10"
+          autoCapitalize="characters"
+          className="ad-input ad-mono"
+        />
+        <p className="ad-hint">Customers type this at checkout. Not case sensitive.</p>
       </div>
-    </div>
+
+      <div className="mt-4">
+        <span className="ad-label">Discount</span>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setType('percent')}
+            aria-pressed={type === 'percent'}
+            className={`ad-btn ad-btn-sm flex-1 ${type === 'percent' ? 'ad-btn-primary' : 'ad-btn-outline'}`}
+          >
+            Percentage
+          </button>
+          <button
+            type="button"
+            onClick={() => setType('fixed')}
+            aria-pressed={type === 'fixed'}
+            className={`ad-btn ad-btn-sm flex-1 ${type === 'fixed' ? 'ad-btn-primary' : 'ad-btn-outline'}`}
+          >
+            Fixed ₹
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <label htmlFor="value" className="ad-label">
+          {type === 'percent' ? 'Percent off' : 'Amount off (₹)'}
+        </label>
+        <input
+          id="value"
+          type="number"
+          inputMode="decimal"
+          min="0"
+          max={type === 'percent' ? 100 : undefined}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="ad-input ad-num"
+        />
+        {type === 'percent' && numValue > 100 ? (
+          <p className="ad-error">A percentage cannot be over 100.</p>
+        ) : null}
+      </div>
+
+      {type === 'percent' ? (
+        <div className="mt-4">
+          <label htmlFor="max" className="ad-label">Cap the discount at (₹, optional)</label>
+          <input
+            id="max"
+            type="number"
+            inputMode="decimal"
+            min="0"
+            value={maxDiscount}
+            onChange={(e) => setMaxDiscount(e.target.value)}
+            className="ad-input ad-num"
+          />
+          <p className="ad-hint">Stops a big order giving away too much.</p>
+        </div>
+      ) : null}
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="min" className="ad-label">Min order (₹)</label>
+          <input
+            id="min"
+            type="number"
+            inputMode="decimal"
+            min="0"
+            value={minOrder}
+            onChange={(e) => setMinOrder(e.target.value)}
+            className="ad-input ad-num"
+          />
+        </div>
+        <div>
+          <label htmlFor="limit" className="ad-label">Total uses</label>
+          <input
+            id="limit"
+            type="number"
+            inputMode="numeric"
+            min="1"
+            value={limit}
+            onChange={(e) => setLimit(e.target.value)}
+            placeholder="Unlimited"
+            className="ad-input ad-num"
+          />
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <label htmlFor="expires" className="ad-label">Expires (optional)</label>
+        <input
+          id="expires"
+          type="date"
+          value={expires}
+          onChange={(e) => setExpires(e.target.value)}
+          className="ad-input"
+        />
+      </div>
+
+      <label className="mt-4 flex items-center gap-3 text-sm">
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={(e) => setActive(e.target.checked)}
+          className="h-5 w-5 accent-[color:var(--color-brand)]"
+        />
+        Active
+      </label>
+
+      {error ? <p className="ad-error mt-3">{error}</p> : null}
+    </Sheet>
   );
 }
