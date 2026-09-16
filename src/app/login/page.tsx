@@ -36,12 +36,15 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col bg-[color:var(--color-chrome)] lg:flex-row">
       {/* Brand panel — full-bleed dark green, the mark large, one line of copy. */}
       <div className="flex flex-col justify-end px-6 pb-8 pt-14 text-[color:var(--color-on-chrome)] lg:flex-1 lg:justify-center lg:px-20">
-        <svg viewBox="0 0 32 32" className="h-14 w-14" aria-hidden="true">
-          <path
-            d="M16 3c1.8 4.2 4.6 6.4 7.4 8.4 2.2 1.6 3.6 3.9 3.6 6.6A11 11 0 0 1 16 29 11 11 0 0 1 5 18c0-2.7 1.4-5 3.6-6.6C11.4 9.4 14.2 7.2 16 3Z"
-            fill="var(--color-accent)"
-          />
-        </svg>
+        {/* The real company mark, not the placeholder flame. */}
+        <img
+          src="/logo-mark.png"
+          alt=""
+          aria-hidden="true"
+          width={72}
+          height={72}
+          className="h-[4.5rem] w-[4.5rem]"
+        />
         <h1 className="mt-6 text-4xl text-white lg:text-5xl">Attar World</h1>
         <p className="ad-eyebrow mt-3 text-[color:var(--color-accent)]">Admin panel</p>
         <p className="mt-6 hidden max-w-sm text-base text-[color:var(--color-on-chrome-dim)] lg:block">

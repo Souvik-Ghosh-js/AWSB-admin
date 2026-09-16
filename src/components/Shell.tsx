@@ -167,7 +167,7 @@ export function Shell({ children }: { children: ReactNode }) {
       {/* ------------------------------------------------ phone tab bar */}
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 bg-[color:var(--color-chrome)] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(13,46,29,0.35)] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 bg-[color:var(--color-chrome)] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(18,19,47,0.45)] lg:hidden"
       >
         <ul className="flex">
           {PRIMARY.map((item) => {
@@ -254,13 +254,21 @@ export function Shell({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * The company mark — the circle monogram cropped from the owner's logo file
+ * (public/logo-mark.png), replacing the placeholder flame that was drawn
+ * before the real logo existed. A plain <img>: it is a 512px PNG from
+ * /public, one cached request, and next/image adds nothing for a 36px icon.
+ */
 function Mark() {
   return (
-    <svg viewBox="0 0 32 32" className="h-9 w-9 shrink-0" aria-hidden="true">
-      <path
-        d="M16 3c1.8 4.2 4.6 6.4 7.4 8.4 2.2 1.6 3.6 3.9 3.6 6.6A11 11 0 0 1 16 29 11 11 0 0 1 5 18c0-2.7 1.4-5 3.6-6.6C11.4 9.4 14.2 7.2 16 3Z"
-        fill="var(--color-accent)"
-      />
-    </svg>
+    <img
+      src="/logo-mark.png"
+      alt=""
+      aria-hidden="true"
+      width={36}
+      height={36}
+      className="h-9 w-9 shrink-0"
+    />
   );
 }

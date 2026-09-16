@@ -23,33 +23,33 @@
 
 @theme {
   /* ---- surfaces ---- */
-  --color-bg: #f3f1ea;            /* warmer, more contrast against white cards */
+  --color-bg: #f4f4f8;            /* warmer, more contrast against white cards */
   --color-surface: #ffffff;
-  --color-surface-alt: #ebe7dc;
-  --color-surface-hover: #f8f6f0;
+  --color-surface-alt: #e9e9f1;
+  --color-surface-hover: #f7f7fb;
 
   /* ---- chrome (dark) ---- */
-  --color-chrome: #0d2e1d;        /* sidebar / header / tab bar */
-  --color-chrome-raised: #14432a; /* active items, hover on chrome */
-  --color-on-chrome: #f4efe3;     /* ivory text on the dark chrome */
-  --color-on-chrome-dim: rgba(244, 239, 227, 0.62);
+  --color-chrome: #12132f;        /* sidebar / header / tab bar */
+  --color-chrome-raised: #1c1d45; /* active items, hover on chrome */
+  --color-on-chrome: #f4f3fa;     /* ivory text on the dark chrome */
+  --color-on-chrome-dim: rgba(244, 243, 250, 0.62);
 
   /* ---- ink ramp ---- */
-  --color-ink: #0f1712;
-  --color-soft: #3f4a42;
-  --color-muted: #66706a;
+  --color-ink: #12132b;
+  --color-soft: #454760;
+  --color-muted: #6b6d84;
 
   /* ---- brand ---- */
-  --color-brand: #14432a;
-  --color-brand-soft: #2d6a4f;
-  --color-brand-deep: #0d2e1d;
-  --color-brand-tint: #dfeae2;
-  --color-accent: #c9962b;        /* gold — the one bright thing on dark chrome */
-  --color-accent-deep: #8a651b;   /* gold that passes contrast on white */
+  --color-brand: #1c1d45;
+  --color-brand-soft: #34367a;
+  --color-brand-deep: #12132f;
+  --color-brand-tint: #e4e4f2;
+  --color-accent: #fc2484;        /* gold — the one bright thing on dark chrome */
+  --color-accent-deep: #b8125f;   /* gold that passes contrast on white */
 
   /* ---- lines ---- */
-  --color-line: #ddd8ca;
-  --color-line-strong: #b9b09a;
+  --color-line: #dcdce6;
+  --color-line-strong: #b4b4c6;
 
   /* ---- semantic — SOLID fills, white text ---- */
   --color-ok: #1b7a4a;
