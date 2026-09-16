@@ -106,16 +106,16 @@ export default function ProductEditorPage() {
       scent_family: scentFamily.trim() || null,
       status,
       is_featured: isFeatured,
-      variants: variants
-        .filter((v) => v.enabled)
-        .map((v) => ({
-          size_ml: v.sizeMl,
-          price_paise: toPaise(v.price),
-          low_stock_threshold: Number(v.threshold) || 5,
-          is_enabled: true,
-          // Stock is only set at creation; afterwards it goes through the ledger.
-          ...(isNew ? { stock_qty: Number(v.stock) || 0 } : {}),
-        })),
+      // Every size is sent, with its enabled flag, so that disabling a size in
+      // the form actually disables it on the server. The API matches by size_ml.
+      variants: variants.map((v) => ({
+        size_ml: v.sizeMl,
+        price_paise: toPaise(v.price),
+        low_stock_threshold: Number(v.threshold) || 5,
+        is_enabled: v.enabled,
+        // Stock is only set at creation; afterwards it goes through the ledger.
+        ...(isNew ? { stock_qty: Number(v.stock) || 0 } : {}),
+      })),
     };
 
     const result = await run((t) =>
