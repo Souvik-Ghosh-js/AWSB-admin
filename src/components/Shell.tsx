@@ -167,7 +167,7 @@ export function Shell({ children }: { children: ReactNode }) {
       {/* ------------------------------------------------ phone tab bar */}
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 bg-[color:var(--color-chrome)] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(18,19,47,0.45)] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 bg-[color:var(--color-chrome)] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(36,10,16,0.45)] lg:hidden"
       >
         <ul className="flex">
           {PRIMARY.map((item) => {
@@ -255,20 +255,17 @@ export function Shell({ children }: { children: ReactNode }) {
 }
 
 /**
- * The company mark — the circle monogram cropped from the owner's logo file
- * (public/logo-mark.png), replacing the placeholder flame that was drawn
- * before the real logo existed. A plain <img>: it is a 512px PNG from
- * /public, one cached request, and next/image adds nothing for a 36px icon.
+ * The company mark — the FULL owner artwork (ring, bottle, flourish), not a
+ * cropped circle. The source PNG is 1080x1329 (0.81:1 portrait), so this is
+ * sized by height with width auto, matching the storefront's treatment.
  */
 function Mark() {
   return (
     <img
-      src="/logo-mark.png"
+      src="/logo-full.png"
       alt=""
       aria-hidden="true"
-      width={36}
-      height={36}
-      className="h-9 w-9 shrink-0"
+      className="h-9 w-auto shrink-0"
     />
   );
 }

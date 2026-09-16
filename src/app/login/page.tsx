@@ -36,14 +36,17 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col bg-[color:var(--color-chrome)] lg:flex-row">
       {/* Brand panel — full-bleed dark green, the mark large, one line of copy. */}
       <div className="flex flex-col justify-end px-6 pb-8 pt-14 text-[color:var(--color-on-chrome)] lg:flex-1 lg:justify-center lg:px-20">
-        {/* The real company mark, not the placeholder flame. */}
+        {/* The real company mark, full artwork (ring + bottle + flourish).
+            self-start is load-bearing: the parent is flex-col, whose default
+            align-items:stretch overrides width:auto on a flex child and
+            stretched this to the full column width, squashing the image
+            flat. self-start opts the logo out of stretch so its own
+            aspect-ratio governs the size instead. */}
         <img
-          src="/logo-mark.png"
+          src="/logo-full.png"
           alt=""
           aria-hidden="true"
-          width={72}
-          height={72}
-          className="h-[4.5rem] w-[4.5rem]"
+          className="h-24 w-auto self-start"
         />
         <h1 className="mt-6 text-4xl text-white lg:text-5xl">Attar World</h1>
         <p className="ad-eyebrow mt-3 text-[color:var(--color-accent)]">Admin panel</p>

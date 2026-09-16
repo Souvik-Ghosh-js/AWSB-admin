@@ -29,7 +29,7 @@ export const viewport: Viewport = {
   // No maximumScale: pinch-zoom must stay available. Disabling it to stop
   // iOS focus-zoom would break the page for anyone who needs to magnify;
   // the 16px input font in globals.css solves that properly instead.
-  themeColor: '#12132f',
+  themeColor: '#3a0f18',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

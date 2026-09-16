@@ -23,33 +23,35 @@
 
 @theme {
   /* ---- surfaces ---- */
-  --color-bg: #f4f4f8;            /* warmer, more contrast against white cards */
+  /* Palette (v3): deep wine/maroon + mustard-gold, matching the storefront —
+     estimated by eye from the owner's reference mockup screenshot. */
+  --color-bg: #f6f2ea;            /* warmer, more contrast against white cards */
   --color-surface: #ffffff;
-  --color-surface-alt: #e9e9f1;
-  --color-surface-hover: #f7f7fb;
+  --color-surface-alt: #ece1cd;
+  --color-surface-hover: #f7f2e6;
 
   /* ---- chrome (dark) ---- */
-  --color-chrome: #12132f;        /* sidebar / header / tab bar */
-  --color-chrome-raised: #1c1d45; /* active items, hover on chrome */
-  --color-on-chrome: #f4f3fa;     /* ivory text on the dark chrome */
-  --color-on-chrome-dim: rgba(244, 243, 250, 0.62);
+  --color-chrome: #240a10;        /* sidebar / header / tab bar */
+  --color-chrome-raised: #3a0f18; /* active items, hover on chrome */
+  --color-on-chrome: #f6ecd8;     /* ivory text on the dark chrome */
+  --color-on-chrome-dim: rgba(246, 236, 216, 0.62);
 
   /* ---- ink ramp ---- */
-  --color-ink: #12132b;
-  --color-soft: #454760;
-  --color-muted: #6b6d84;
+  --color-ink: #241012;
+  --color-soft: #5c3a3e;
+  --color-muted: #7a6058;
 
   /* ---- brand ---- */
-  --color-brand: #1c1d45;
-  --color-brand-soft: #34367a;
-  --color-brand-deep: #12132f;
-  --color-brand-tint: #e4e4f2;
-  --color-accent: #fc2484;        /* gold — the one bright thing on dark chrome */
-  --color-accent-deep: #b8125f;   /* gold that passes contrast on white */
+  --color-brand: #3a0f18;
+  --color-brand-soft: #5c1d28;
+  --color-brand-deep: #240a10;
+  --color-brand-tint: #f3e6c8;
+  --color-accent: #cc9c3c;        /* mustard-gold — the one bright thing on dark chrome */
+  --color-accent-deep: #a67a24;   /* gold that passes contrast on white */
 
   /* ---- lines ---- */
-  --color-line: #dcdce6;
-  --color-line-strong: #b4b4c6;
+  --color-line: #e8ddc8;
+  --color-line-strong: #d4c19f;
 
   /* ---- semantic — SOLID fills, white text ---- */
   --color-ok: #1b7a4a;
