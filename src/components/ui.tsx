@@ -304,11 +304,11 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         <h1>{title}</h1>
         {subtitle ? (
-          <p className="mt-1 text-sm text-[color:var(--color-muted)]">{subtitle}</p>
+          <p className="mt-2 text-base font-medium text-[color:var(--color-soft)]">{subtitle}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
