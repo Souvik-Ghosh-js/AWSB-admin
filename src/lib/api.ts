@@ -289,6 +289,13 @@ const mapProduct = (r: Record<string, unknown>): Product => ({
   isFeatured: bool(pick(r, 'isFeatured', 'is_featured')),
   variants: Array.isArray(r.variants) ? (r.variants as Record<string, unknown>[]).map(mapVariant) : [],
   images: Array.isArray(r.images) ? (r.images as Record<string, unknown>[]).map(mapImage) : [],
+  categories: Array.isArray(r.categories)
+    ? (r.categories as Record<string, unknown>[]).map((c) => ({
+        id: num(c.id),
+        slug: str(c.slug),
+        name: str(c.name),
+      }))
+    : [],
   createdAt: nullableStr(pick(r, 'createdAt', 'created_at')),
 });
 
@@ -573,6 +580,19 @@ export const api = {
   /* categories, settings, users, notifications */
   categories: (token: string) =>
     request<unknown>('/admin/categories', { token }).then((r) => toList(r, mapCategory)),
+
+  createCategory: (token: string, input: Record<string, unknown>) =>
+    request<unknown>('/admin/categories', { method: 'POST', token, body: input }).then((r) =>
+      mapCategory(r as Record<string, unknown>),
+    ),
+
+  updateCategory: (token: string, id: number, input: Record<string, unknown>) =>
+    request<unknown>(`/admin/categories/${id}`, { method: 'PATCH', token, body: input }).then((r) =>
+      mapCategory(r as Record<string, unknown>),
+    ),
+
+  deleteCategory: (token: string, id: number) =>
+    request<void>(`/admin/categories/${id}`, { method: 'DELETE', token }),
 
   settings: async (token: string): Promise<SettingsMap> => {
     const r = await request<Record<string, unknown>>('/admin/settings', { token });

@@ -11,7 +11,7 @@ import { money, toPaise, toRupeeInput } from '@/lib/format';
 import {
   CardSkeleton, ConfirmSheet, ErrorBox, PageHeader, Spinner, StockPill, Toast,
 } from '@/components/ui';
-import type { Product, Variant } from '@/lib/types';
+import type { Category, Product, Variant } from '@/lib/types';
 
 const SIZES = [3, 6, 12] as const;
 
@@ -45,6 +45,7 @@ export default function ProductEditorPage() {
     (t) => (isNew ? Promise.resolve(null) : api.product(t, id)),
     [id],
   );
+  const { data: allCategories } = useApi<Category[]>((t) => api.categories(t));
   const { run, busy, error: actionError } = useAction();
 
   const [name, setName] = useState('');
@@ -54,6 +55,7 @@ export default function ProductEditorPage() {
   const [scentFamily, setScentFamily] = useState('');
   const [status, setStatus] = useState<'draft' | 'active' | 'archived'>('draft');
   const [isFeatured, setIsFeatured] = useState(false);
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [variants, setVariants] = useState<VariantDraft[]>(
     SIZES.map((s) => ({ id: null, sizeMl: s, price: '', stock: '0', threshold: '5', enabled: true })),
   );
@@ -72,6 +74,7 @@ export default function ProductEditorPage() {
     setScentFamily(data.scentFamily ?? '');
     setStatus(data.status);
     setIsFeatured(data.isFeatured);
+    setCategoryIds(data.categories.map((c) => c.id));
     setVariants(
       SIZES.map((s) => {
         const v: Variant | undefined = data.variants.find((x) => x.sizeMl === s);
@@ -97,6 +100,12 @@ export default function ProductEditorPage() {
     setVariants((prev) => prev.map((v) => (v.sizeMl === size ? { ...v, ...patch } : v)));
   }
 
+  function toggleCategory(catId: number) {
+    setCategoryIds((prev) =>
+      prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId],
+    );
+  }
+
   async function save() {
     const payload = {
       name: name.trim(),
@@ -106,6 +115,7 @@ export default function ProductEditorPage() {
       scent_family: scentFamily.trim() || null,
       status,
       is_featured: isFeatured,
+      category_ids: categoryIds,
       // Every size is sent, with its enabled flag, so that disabling a size in
       // the form actually disables it on the server. The API matches by size_ml.
       variants: variants.map((v) => ({
@@ -201,6 +211,44 @@ export default function ProductEditorPage() {
                 placeholder="Oud, Floral, Musk, Amber…"
                 className="ad-input"
               />
+            </div>
+
+            <div className="mt-4">
+              <span className="ad-label">Categories</span>
+              <p className="ad-hint mb-2">
+                What kind of product this is. An attar should be in &ldquo;Attars&rdquo; — leaving
+                it uncategorised keeps it out of every /shop category filter.
+              </p>
+              {!allCategories || allCategories.length === 0 ? (
+                <p className="text-xs text-[color:var(--color-muted)]">
+                  No categories exist yet — add one under{' '}
+                  <Link href="/categories" className="ad-link">
+                    Categories
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {allCategories.map((c) => {
+                    const checked = categoryIds.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => toggleCategory(c.id)}
+                        aria-pressed={checked}
+                        className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                          checked
+                            ? 'border-[color:var(--color-brand)] bg-[color:var(--color-brand)] text-white'
+                            : 'border-[color:var(--color-line-strong)] text-[color:var(--color-ink)] hover:border-[color:var(--color-brand)]'
+                        }`}
+                      >
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="mt-4">

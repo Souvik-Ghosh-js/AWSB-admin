@@ -30,6 +30,7 @@ const NAV: NavItem[] = [
   { href: '/orders', label: 'Orders', primary: true, icon: icon('M4 6h16M4 12h16M4 18h10') },
   { href: '/products', label: 'Products', primary: true, icon: icon('M20 7 12 3 4 7v10l8 4 8-4V7ZM4 7l8 4 8-4M12 11v10') },
   { href: '/inventory', label: 'Stock', primary: true, icon: icon('M3 7h18v12H3zM3 7l2-4h14l2 4M9 12h6') },
+  { href: '/categories', label: 'Categories', icon: icon('M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z') },
   { href: '/coupons', label: 'Coupons', icon: icon('M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z') },
   { href: '/couriers', label: 'Couriers', icon: icon('M3 16V8h11v8M14 11h4l3 3v2h-7M6.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z') },
   { href: '/reviews', label: 'Reviews', icon: icon('m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 9.7l5.4-.8z') },

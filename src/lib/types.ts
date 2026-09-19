@@ -186,6 +186,8 @@ export interface Product {
   isFeatured: boolean;
   variants: Variant[];
   images: ProductImage[];
+  /** Which categories (Attars, Powders, Bakhoor, Incense, ...) this product belongs to. */
+  categories: { id: number; slug: string; name: string }[];
   createdAt: string | null;
 }
 
