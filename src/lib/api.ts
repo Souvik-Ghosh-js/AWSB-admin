@@ -404,10 +404,14 @@ function mapDashboard(raw: unknown): Dashboard {
     last30Days: window(pick(r, 'last30Days', 'last_30_days')),
     allTime: window(pick(r, 'allTime', 'all_time')),
     ordersByStatus: (pick(r, 'ordersByStatus', 'orders_by_status') ?? {}) as Dashboard['ordersByStatus'],
+    // The live API sends unitsSold — confirmed against the real response,
+    // it has no qtySold/qty_sold/quantity variant at all, which is why "0
+    // sold" showed on every product regardless of actual sales.
     topProducts: arr(pick(r, 'topProducts', 'top_products')).map((p) => ({
       productId: num(pick(p, 'productId', 'product_id', 'id')),
       name: str(pick(p, 'name', 'productName', 'product_name')),
-      qtySold: num(pick(p, 'qtySold', 'qty_sold', 'quantity')),
+      slug: nullableStr(p.slug),
+      qtySold: num(pick(p, 'unitsSold', 'units_sold', 'qtySold', 'qty_sold', 'quantity')),
       revenuePaise: num(pick(p, 'revenuePaise', 'revenue_paise')),
     })),
     lowStock: arr(pick(r, 'lowStock', 'low_stock')).map(mapLowStock),

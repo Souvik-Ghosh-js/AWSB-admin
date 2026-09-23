@@ -42,6 +42,7 @@ export interface RevenueWindow {
 export interface DashboardTopProduct {
   productId: number;
   name: string;
+  slug: string | null;
   qtySold: number;
   revenuePaise: number;
 }
