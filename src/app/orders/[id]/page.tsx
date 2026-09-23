@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { api } from '@/lib/api';
@@ -17,6 +17,7 @@ import type { OrderDetail } from '@/lib/types';
 
 export default function OrderPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const id = Number(params.id);
 
   const { data, error, loading, reload } = useApi<OrderDetail>((t) => api.order(t, id), [id]);
@@ -25,6 +26,8 @@ export default function OrderPage() {
   const [shipOpen, setShipOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [deliverOpen, setDeliverOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [reason, setReason] = useState('');
   const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'danger' } | null>(null);
 
@@ -43,6 +46,10 @@ export default function OrderPage() {
   const canShip = o.status === 'confirmed' || o.status === 'packed';
   const canDeliver = o.status === 'shipped';
   const canCancel = ['pending_payment', 'confirmed', 'packed'].includes(o.status);
+  // Mirrors the server's guard exactly: only orders that never took a
+  // captured payment, or that were already cancelled (and refunded if there
+  // was anything to refund), can be permanently deleted.
+  const canDelete = ['pending_payment', 'cancelled'].includes(o.status);
 
   async function doDeliver() {
     const ok = await run((t) => api.deliverOrder(t, id));
@@ -61,6 +68,19 @@ export default function OrderPage() {
       setToast({ msg: 'Order cancelled. Stock returned and the customer emailed.', tone: 'ok' });
       setReason('');
       reload();
+    }
+  }
+
+  // Permanent — the order, its items, payments and refund records are gone
+  // for good afterwards. The server independently re-checks status !==
+  // pending_payment/cancelled, so this button being visible is not itself
+  // the security boundary.
+  async function doDelete() {
+    if (deleteConfirmText.trim() !== o.orderNumber) return;
+    const ok = await run((t) => api.deleteOrder(t, id));
+    setDeleteOpen(false);
+    if (ok !== null) {
+      router.replace('/orders');
     }
   }
 
@@ -105,6 +125,18 @@ export default function OrderPage() {
           ) : null}
         </div>
       )}
+
+      {canDelete && can(user, 'owner') ? (
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            className="ad-btn ad-btn-outline ad-btn-sm text-[color:var(--color-danger)]"
+          >
+            Delete permanently
+          </button>
+        </div>
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* ------------------------------------------------------- items */}
@@ -266,6 +298,58 @@ export default function OrderPage() {
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. out of stock, customer requested"
             className="ad-input"
+          />
+        </div>
+      </Sheet>
+
+      <Sheet
+        open={deleteOpen}
+        onClose={() => {
+          setDeleteOpen(false);
+          setDeleteConfirmText('');
+        }}
+        title="Delete this order permanently?"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteOpen(false);
+                setDeleteConfirmText('');
+              }}
+              className="ad-btn ad-btn-outline flex-1"
+              disabled={busy}
+            >
+              Keep it
+            </button>
+            <button
+              type="button"
+              onClick={doDelete}
+              disabled={busy || deleteConfirmText.trim() !== o.orderNumber}
+              className="ad-btn ad-btn-danger flex-1"
+            >
+              {busy ? <Spinner className="h-4 w-4" /> : null}
+              Delete permanently
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm leading-relaxed text-[color:var(--color-soft)]">
+          This cannot be undone. The order, its items, and any payment or refund records are
+          erased completely — not archived, not recoverable.
+        </p>
+        <div className="mt-4">
+          <label htmlFor="delete-confirm" className="ad-label">
+            Type <span className="ad-mono">{o.orderNumber}</span> to confirm
+          </label>
+          <input
+            id="delete-confirm"
+            type="text"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder={o.orderNumber}
+            className="ad-input ad-mono"
+            autoComplete="off"
           />
         </div>
       </Sheet>

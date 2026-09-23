@@ -472,6 +472,10 @@ export const api = {
   cancelOrder: (token: string, id: number, reason: string) =>
     request<unknown>(`/admin/orders/${id}/cancel`, { method: 'POST', token, body: { reason } }),
 
+  /** Permanent, irreversible — only pending_payment or cancelled orders qualify (owner only). */
+  deleteOrder: (token: string, id: number) =>
+    request<void>(`/admin/orders/${id}`, { method: 'DELETE', token }),
+
   /* label OCR — the result is a SUGGESTION the admin confirms, never auto-saved */
   async scanAwb(token: string, file: File, courierId?: number) {
     const form = new FormData();
