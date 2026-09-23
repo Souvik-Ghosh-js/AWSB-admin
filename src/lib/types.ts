@@ -289,6 +289,8 @@ export interface AdminNotification {
   type: string;
   title: string;
   body: string | null;
+  entityType: string | null;
+  entityId: number | null;
   isRead: boolean;
   createdAt: string;
 }

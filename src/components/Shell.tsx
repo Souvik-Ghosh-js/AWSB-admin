@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { clearSession, getToken, getUser, subscribe } from '@/lib/auth';
+import { NotificationBell } from './NotificationBell';
 import type { AdminUser } from '@/lib/types';
 
 /**
@@ -153,14 +154,24 @@ export function Shell({ children }: { children: ReactNode }) {
             <Mark />
             <span className="font-[family-name:var(--font-display)] text-lg font-bold">Attar World</span>
           </div>
-          <button
-            type="button"
-            onClick={signOut}
-            className="text-xs font-semibold text-[color:var(--color-on-chrome-dim)] underline underline-offset-4"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell variant="chrome" />
+            <button
+              type="button"
+              onClick={signOut}
+              className="text-xs font-semibold text-[color:var(--color-on-chrome-dim)] underline underline-offset-4"
+            >
+              Sign out
+            </button>
+          </div>
         </header>
+
+        {/* The bell needs a fixed spot on desktop too — the sidebar is nav
+            only, so this thin strip is the one place it can sit regardless
+            of which page is open. */}
+        <div className="sticky top-0 z-30 hidden justify-end border-b border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-6 py-2 lg:flex">
+          <NotificationBell />
+        </div>
 
         <main className="ad-page">{children}</main>
       </div>

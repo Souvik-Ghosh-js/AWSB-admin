@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
 import { api } from '@/lib/api';
@@ -30,6 +30,7 @@ export default function OrdersPage() {
 }
 
 function OrdersInner() {
+  const router = useRouter();
   const params = useSearchParams();
   const [status, setStatus] = useState(params.get('status') ?? '');
   const [search, setSearch] = useState('');
@@ -162,9 +163,17 @@ function OrdersInner() {
                 </thead>
                 <tbody>
                   {data.items.map((o) => (
-                    <tr key={o.id}>
+                    <tr
+                      key={o.id}
+                      className="cursor-pointer hover:bg-[color:var(--color-surface-alt)]"
+                      onClick={() => router.push(`/orders/${o.id}`)}
+                    >
                       <td>
-                        <Link href={`/orders/${o.id}`} className="ad-mono ad-link font-medium">
+                        <Link
+                          href={`/orders/${o.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="ad-mono ad-link font-medium"
+                        >
                           {o.orderNumber}
                         </Link>
                       </td>

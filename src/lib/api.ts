@@ -383,6 +383,8 @@ const mapNotification = (r: Record<string, unknown>): AdminNotification => ({
   type: str(r.type),
   title: str(r.title),
   body: nullableStr(r.body),
+  entityType: nullableStr(pick(r, 'entityType', 'entity_type')),
+  entityId: r.entityId != null || r.entity_id != null ? num(pick(r, 'entityId', 'entity_id')) : null,
   isRead: bool(pick(r, 'isRead', 'is_read')),
   createdAt: str(pick(r, 'createdAt', 'created_at')),
 });
@@ -626,10 +628,14 @@ export const api = {
   deleteUser: (token: string, id: number) =>
     request<void>(`/admin/users/${id}`, { method: 'DELETE', token }),
 
-  notifications: (token: string, q: { page?: number; limit?: number } = {}) =>
-    request<unknown>('/admin/notifications', { token, query: q }).then((r) =>
-      toPage(r, mapNotification),
-    ),
+  notifications: (
+    token: string,
+    q: { page?: number; limit?: number; unread_only?: boolean } = {},
+  ): Promise<Page<AdminNotification> & { unread: number }> =>
+    request<unknown>('/admin/notifications', { token, query: q }).then((r) => ({
+      ...toPage(r, mapNotification),
+      unread: num((r as Record<string, unknown>)?.unread),
+    })),
 
   readNotification: (token: string, id: number) =>
     request<unknown>(`/admin/notifications/${id}/read`, { method: 'POST', token }),
