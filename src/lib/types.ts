@@ -119,6 +119,7 @@ export interface OrderItem {
   id: number;
   productName: string;
   sizeMl: number;
+  sizeUnit: 'ml' | 'g' | 'sticks';
   sku: string;
   quantity: number;
   unitPricePaise: number;
@@ -159,7 +160,9 @@ export interface OrderDetail extends OrderSummary {
 
 export interface Variant {
   id: number;
-  sizeMl: 3 | 6 | 12;
+  /** No longer literally 3, 6 or 12 for a powder/bakhoor/dhoopbatti product — see sizeUnit. */
+  sizeMl: number;
+  sizeUnit: 'ml' | 'g' | 'sticks';
   sku: string;
   pricePaise: number;
   compareAtPaise: number | null;
@@ -199,6 +202,7 @@ export interface LowStockRow {
   productId: number;
   productName: string;
   sizeMl: number;
+  sizeUnit: 'ml' | 'g' | 'sticks';
   stockQty: number;
   threshold: number;
 }
@@ -208,6 +212,7 @@ export interface Movement {
   variantId: number;
   productName: string | null;
   sizeMl: number | null;
+  sizeUnit: 'ml' | 'g' | 'sticks';
   delta: number;
   reason: string;
   note: string | null;

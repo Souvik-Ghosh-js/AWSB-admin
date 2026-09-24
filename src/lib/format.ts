@@ -32,6 +32,12 @@ export function toRupeeInput(paise: number | null | undefined): string {
   return (paise / 100).toFixed(2).replace(/\.00$/, '');
 }
 
+/** "12 ml" / "25 g" / "1 stick" / "35 sticks" — not every product is millilitres. */
+export function variantSize(sizeMl: number, sizeUnit: 'ml' | 'g' | 'sticks' = 'ml'): string {
+  if (sizeUnit === 'sticks') return `${sizeMl} stick${sizeMl === 1 ? '' : 's'}`;
+  return `${sizeMl} ${sizeUnit}`;
+}
+
 /** "2026-09-16T04:12:00Z" → "16 Sep, 4:12 pm" */
 export function dateTime(iso: string | null | undefined): string {
   if (!iso) return '—';

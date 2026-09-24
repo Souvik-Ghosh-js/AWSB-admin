@@ -7,22 +7,31 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { useAction, useApi } from '@/lib/useApi';
-import { money, toPaise, toRupeeInput } from '@/lib/format';
+import { money, toPaise, toRupeeInput, variantSize } from '@/lib/format';
 import {
   CardSkeleton, ConfirmSheet, ErrorBox, PageHeader, Spinner, StockPill, Toast,
 } from '@/components/ui';
 import type { Category, Product, Variant } from '@/lib/types';
 
-const SIZES = [3, 6, 12] as const;
+const ML_SIZES = [3, 6, 12] as const;
+type SizeUnit = 'ml' | 'g' | 'sticks';
+const UNIT_LABEL: Record<SizeUnit, string> = { ml: 'ml', g: 'g', sticks: 'sticks' };
 
 type VariantDraft = {
   id: number | null;
-  sizeMl: 3 | 6 | 12;
+  sizeValue: number;
   price: string;
   stock: string;
   threshold: string;
   enabled: boolean;
 };
+
+function defaultDraftsFor(unit: SizeUnit): VariantDraft[] {
+  const sizes = unit === 'ml' ? ML_SIZES : [0, 0, 0];
+  return sizes.map((s) => ({
+    id: null, sizeValue: s, price: '', stock: '0', threshold: '5', enabled: unit === 'ml',
+  }));
+}
 
 /**
  * Create or edit a product.
@@ -56,9 +65,8 @@ export default function ProductEditorPage() {
   const [status, setStatus] = useState<'draft' | 'active' | 'archived'>('draft');
   const [isFeatured, setIsFeatured] = useState(false);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
-  const [variants, setVariants] = useState<VariantDraft[]>(
-    SIZES.map((s) => ({ id: null, sizeMl: s, price: '', stock: '0', threshold: '5', enabled: true })),
-  );
+  const [sizeUnit, setSizeUnit] = useState<SizeUnit>('ml');
+  const [variants, setVariants] = useState<VariantDraft[]>(defaultDraftsFor('ml'));
 
   const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'danger' } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -75,29 +83,66 @@ export default function ProductEditorPage() {
     setStatus(data.status);
     setIsFeatured(data.isFeatured);
     setCategoryIds(data.categories.map((c) => c.id));
-    setVariants(
-      SIZES.map((s) => {
-        const v: Variant | undefined = data.variants.find((x) => x.sizeMl === s);
-        return {
-          id: v?.id ?? null,
-          sizeMl: s,
-          price: toRupeeInput(v?.pricePaise ?? null),
-          stock: String(v?.stockQty ?? 0),
-          threshold: String(v?.lowStockThreshold ?? 5),
-          enabled: v?.isEnabled ?? false,
-        };
-      }),
-    );
+
+    // A product's variants are always one unit (an attar is all ml, a
+    // powder is all grams) — read it off whichever variant exists, ml if
+    // there are none yet.
+    const unit: SizeUnit = (data.variants[0]?.sizeUnit as SizeUnit | undefined) ?? 'ml';
+    setSizeUnit(unit);
+
+    if (unit === 'ml') {
+      // Same fixed 3/6/12ml slots as before — every existing attar keeps
+      // working exactly as it did.
+      setVariants(
+        ML_SIZES.map((s) => {
+          const v = data.variants.find((x) => x.sizeMl === s);
+          return {
+            id: v?.id ?? null,
+            sizeValue: s,
+            price: toRupeeInput(v?.pricePaise ?? null),
+            stock: String(v?.stockQty ?? 0),
+            threshold: String(v?.lowStockThreshold ?? 5),
+            enabled: v?.isEnabled ?? false,
+          };
+        }),
+      );
+    } else {
+      // Grams/sticks sizes are whatever the admin set them to, not a fixed
+      // list — hydrate from the product's own rows, padding up to 3 blank
+      // slots so the form always has three to fill in.
+      const rows: VariantDraft[] = data.variants.map((v) => ({
+        id: v.id,
+        sizeValue: v.sizeMl,
+        price: toRupeeInput(v.pricePaise),
+        stock: String(v.stockQty),
+        threshold: String(v.lowStockThreshold),
+        enabled: v.isEnabled,
+      }));
+      while (rows.length < 3) {
+        rows.push({ id: null, sizeValue: 0, price: '', stock: '0', threshold: '5', enabled: false });
+      }
+      setVariants(rows);
+    }
   }, [data]);
 
   if (loading) return <CardSkeleton rows={6} />;
   if (error) return <ErrorBox message={error} onRetry={reload} />;
 
   const enabledWithPrice = variants.filter((v) => v.enabled && toPaise(v.price) > 0);
-  const canSave = name.trim().length >= 2 && enabledWithPrice.length > 0;
+  const validSizes = sizeUnit === 'ml' || variants.every((v) => !v.enabled || v.sizeValue > 0);
+  const canSave = name.trim().length >= 2 && enabledWithPrice.length > 0 && validSizes;
 
-  function setVariant(size: number, patch: Partial<VariantDraft>) {
-    setVariants((prev) => prev.map((v) => (v.sizeMl === size ? { ...v, ...patch } : v)));
+  // Matched by array index, not by size value — for ml the size is fixed and
+  // unique per slot same as before, but for grams/sticks the admin is
+  // editing the size itself, so two slots can briefly hold the same (or a
+  // blank) value while typing.
+  function setVariant(index: number, patch: Partial<VariantDraft>) {
+    setVariants((prev) => prev.map((v, i) => (i === index ? { ...v, ...patch } : v)));
+  }
+
+  function changeUnit(unit: SizeUnit) {
+    setSizeUnit(unit);
+    setVariants(defaultDraftsFor(unit));
   }
 
   function toggleCategory(catId: number) {
@@ -116,16 +161,22 @@ export default function ProductEditorPage() {
       status,
       is_featured: isFeatured,
       category_ids: categoryIds,
-      // Every size is sent, with its enabled flag, so that disabling a size in
-      // the form actually disables it on the server. The API matches by size_ml.
-      variants: variants.map((v) => ({
-        size_ml: v.sizeMl,
-        price_paise: toPaise(v.price),
-        low_stock_threshold: Number(v.threshold) || 5,
-        is_enabled: v.enabled,
-        // Stock is only set at creation; afterwards it goes through the ledger.
-        ...(isNew ? { stock_qty: Number(v.stock) || 0 } : {}),
-      })),
+      // For ml, every one of the fixed 3/6/12 slots is sent (with its
+      // enabled flag) same as before, so disabling a size in the form still
+      // disables it on the server. For grams/sticks the sizes are whatever
+      // the admin typed, not a fixed list — an unfilled (size 0, still
+      // disabled) slot is dropped rather than sent as an invalid size.
+      variants: variants
+        .filter((v) => sizeUnit === 'ml' || v.sizeValue > 0 || v.enabled)
+        .map((v) => ({
+          size_ml: v.sizeValue,
+          size_unit: sizeUnit,
+          price_paise: toPaise(v.price),
+          low_stock_threshold: Number(v.threshold) || 5,
+          is_enabled: v.enabled,
+          // Stock is only set at creation; afterwards it goes through the ledger.
+          ...(isNew ? { stock_qty: Number(v.stock) || 0 } : {}),
+        })),
     };
 
     const result = await run((t) =>
@@ -270,23 +321,71 @@ export default function ProductEditorPage() {
               Each size has its own price. Turn off any size you do not sell.
             </p>
 
+            <div className="mb-4">
+              <span className="ad-label">Sold by</span>
+              <div className="mt-1.5 inline-flex rounded-md border border-[color:var(--color-line-strong)] p-1">
+                {(['ml', 'g', 'sticks'] as const).map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => changeUnit(u)}
+                    aria-pressed={sizeUnit === u}
+                    className={`rounded px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      sizeUnit === u
+                        ? 'bg-[color:var(--color-brand)] text-white'
+                        : 'text-[color:var(--color-soft)]'
+                    }`}
+                  >
+                    {u === 'ml' ? 'Millilitres' : u === 'g' ? 'Grams' : 'Sticks'}
+                  </button>
+                ))}
+              </div>
+              {sizeUnit !== 'ml' ? (
+                <p className="ad-hint mt-1.5">
+                  Set the three sizes yourself, e.g. 12.5, 25, 50 for grams.
+                </p>
+              ) : null}
+              {!validSizes ? (
+                <p className="ad-error mt-1.5">Every size you sell needs a size number above 0.</p>
+              ) : null}
+            </div>
+
             <div className="space-y-4">
-              {variants.map((v) => (
+              {variants.map((v, i) => (
                 <div
-                  key={v.sizeMl}
+                  key={i}
                   className={`rounded-md border p-3 transition-opacity ${
                     v.enabled
                       ? 'border-[color:var(--color-line-strong)]'
                       : 'border-[color:var(--color-line)] opacity-55'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{v.sizeMl}ml</span>
+                  <div className="flex items-center justify-between gap-3">
+                    {sizeUnit === 'ml' ? (
+                      <span className="font-medium">{v.sizeValue}ml</span>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="0.1"
+                          value={v.sizeValue || ''}
+                          onChange={(e) => setVariant(i, { sizeValue: Number(e.target.value) || 0 })}
+                          placeholder="0"
+                          aria-label={`Size ${i + 1}`}
+                          className="ad-input ad-num w-20"
+                        />
+                        <span className="text-sm text-[color:var(--color-muted)]">
+                          {UNIT_LABEL[sizeUnit]}
+                        </span>
+                      </div>
+                    )}
                     <label className="flex items-center gap-2 text-xs">
                       <input
                         type="checkbox"
                         checked={v.enabled}
-                        onChange={(e) => setVariant(v.sizeMl, { enabled: e.target.checked })}
+                        onChange={(e) => setVariant(i, { enabled: e.target.checked })}
                         className="h-5 w-5 accent-[color:var(--color-brand)]"
                       />
                       Sell this size
@@ -296,46 +395,46 @@ export default function ProductEditorPage() {
                   {v.enabled ? (
                     <div className="mt-3 grid grid-cols-2 gap-3">
                       <div>
-                        <label htmlFor={`price-${v.sizeMl}`} className="ad-label">Price (₹)</label>
+                        <label htmlFor={`price-${i}`} className="ad-label">Price (₹)</label>
                         <input
-                          id={`price-${v.sizeMl}`}
+                          id={`price-${i}`}
                           type="number"
                           inputMode="decimal"
                           min="0"
                           step="1"
                           value={v.price}
-                          onChange={(e) => setVariant(v.sizeMl, { price: e.target.value })}
+                          onChange={(e) => setVariant(i, { price: e.target.value })}
                           className="ad-input ad-num"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor={`stock-${v.sizeMl}`} className="ad-label">
+                        <label htmlFor={`stock-${i}`} className="ad-label">
                           Stock
                         </label>
                         <input
-                          id={`stock-${v.sizeMl}`}
+                          id={`stock-${i}`}
                           type="number"
                           inputMode="numeric"
                           min="0"
                           value={v.stock}
                           readOnly={!isNew}
-                          onChange={(e) => setVariant(v.sizeMl, { stock: e.target.value })}
+                          onChange={(e) => setVariant(i, { stock: e.target.value })}
                           className={`ad-input ad-num ${!isNew ? 'bg-[color:var(--color-surface-alt)]' : ''}`}
                         />
                       </div>
 
                       <div className="col-span-2">
-                        <label htmlFor={`thr-${v.sizeMl}`} className="ad-label">
+                        <label htmlFor={`thr-${i}`} className="ad-label">
                           Warn me when stock drops to
                         </label>
                         <input
-                          id={`thr-${v.sizeMl}`}
+                          id={`thr-${i}`}
                           type="number"
                           inputMode="numeric"
                           min="0"
                           value={v.threshold}
-                          onChange={(e) => setVariant(v.sizeMl, { threshold: e.target.value })}
+                          onChange={(e) => setVariant(i, { threshold: e.target.value })}
                           className="ad-input ad-num"
                         />
                       </div>
@@ -482,7 +581,7 @@ export default function ProductEditorPage() {
               <h2 className="mb-3 text-base">Stock right now</h2>
               {data.variants.filter((v) => v.isEnabled).map((v) => (
                 <div key={v.id} className="flex items-center justify-between py-1.5">
-                  <span className="text-sm">{v.sizeMl}ml</span>
+                  <span className="text-sm">{variantSize(v.sizeMl, v.sizeUnit)}</span>
                   <StockPill qty={v.stockQty} threshold={v.lowStockThreshold} />
                 </div>
               ))}

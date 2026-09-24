@@ -1,6 +1,6 @@
 import type {
   AdminNotification, AdminUser, AwbScanResult, Category, Coupon, Courier,
-  Dashboard, Feedback, LowStockRow, Movement, OrderDetail, OrderStatus,
+  Dashboard, Feedback, LowStockRow, Movement, OrderDetail, OrderItem, OrderStatus,
   OrderSummary, Page, Product, Review, SettingsMap, Variant,
 } from './types';
 
@@ -213,6 +213,7 @@ const mapItem = (r: Record<string, unknown>) => ({
   id: num(r.id),
   productName: str(pick(r, 'productName', 'product_name')),
   sizeMl: num(pick(r, 'sizeMl', 'size_ml')),
+  sizeUnit: (str(pick(r, 'sizeUnit', 'size_unit')) || 'ml') as OrderItem['sizeUnit'],
   sku: str(r.sku),
   quantity: num(r.quantity),
   unitPricePaise: num(pick(r, 'unitPricePaise', 'unit_price_paise')),
@@ -261,7 +262,8 @@ function mapOrderDetail(raw: unknown): OrderDetail {
 
 const mapVariant = (r: Record<string, unknown>): Variant => ({
   id: num(r.id),
-  sizeMl: num(pick(r, 'sizeMl', 'size_ml')) as Variant['sizeMl'],
+  sizeMl: num(pick(r, 'sizeMl', 'size_ml')),
+  sizeUnit: (str(pick(r, 'sizeUnit', 'size_unit')) || 'ml') as Variant['sizeUnit'],
   sku: str(r.sku),
   pricePaise: num(pick(r, 'pricePaise', 'price_paise')),
   compareAtPaise: nullableNum(pick(r, 'compareAtPaise', 'compare_at_paise')),
@@ -304,6 +306,7 @@ const mapLowStock = (r: Record<string, unknown>): LowStockRow => ({
   productId: num(pick(r, 'productId', 'product_id')),
   productName: str(pick(r, 'productName', 'product_name', 'name')),
   sizeMl: num(pick(r, 'sizeMl', 'size_ml')),
+  sizeUnit: (str(pick(r, 'sizeUnit', 'size_unit')) || 'ml') as LowStockRow['sizeUnit'],
   stockQty: num(pick(r, 'stockQty', 'stock_qty')),
   threshold: num(pick(r, 'threshold', 'lowStockThreshold', 'low_stock_threshold'), 5),
 });
@@ -313,6 +316,7 @@ const mapMovement = (r: Record<string, unknown>): Movement => ({
   variantId: num(pick(r, 'variantId', 'variant_id')),
   productName: nullableStr(pick(r, 'productName', 'product_name')),
   sizeMl: nullableNum(pick(r, 'sizeMl', 'size_ml')),
+  sizeUnit: (str(pick(r, 'sizeUnit', 'size_unit')) || 'ml') as Movement['sizeUnit'],
   delta: num(r.delta),
   reason: str(r.reason),
   note: nullableStr(r.note),

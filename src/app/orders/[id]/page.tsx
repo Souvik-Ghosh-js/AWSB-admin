@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { getUser, can } from '@/lib/auth';
-import { dateTime, money, humanise } from '@/lib/format';
+import { dateTime, money, humanise, variantSize } from '@/lib/format';
 import { ShipSheet } from '@/components/ShipSheet';
 import {
   CardSkeleton, ConfirmSheet, ErrorBox, Field, PageHeader, PaymentPill, Sheet,
@@ -148,7 +148,7 @@ export default function OrderPage() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{it.productName}</p>
                   <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">
-                    {it.sizeMl}ml · {it.sku} · {money(it.unitPricePaise, { compact: true })} each
+                    {variantSize(it.sizeMl, it.sizeUnit)} · {it.sku} · {money(it.unitPricePaise, { compact: true })} each
                   </p>
                 </div>
                 <div className="shrink-0 text-right">

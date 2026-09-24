@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { api } from '@/lib/api';
 import { useAction, useApi } from '@/lib/useApi';
-import { dateTime, humanise } from '@/lib/format';
+import { dateTime, humanise, variantSize } from '@/lib/format';
 import {
   CardSkeleton, EmptyState, ErrorBox, PageHeader, Sheet, Spinner, StockPill, Toast,
 } from '@/components/ui';
@@ -64,7 +64,7 @@ export default function InventoryPage() {
               <div key={row.variantId} className="ad-card flex items-center gap-3 p-4">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{row.productName}</p>
-                  <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">{row.sizeMl}ml</p>
+                  <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">{variantSize(row.sizeMl, row.sizeUnit)}</p>
                   <div className="mt-2">
                     <StockPill qty={row.stockQty} threshold={row.threshold} />
                   </div>
@@ -105,7 +105,7 @@ export default function InventoryPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm">
                     {m.productName ?? 'Deleted product'}
-                    {m.sizeMl ? ` · ${m.sizeMl}ml` : ''}
+                    {m.sizeMl ? ` · ${variantSize(m.sizeMl, m.sizeUnit)}` : ''}
                   </p>
                   <p className="text-xs text-[color:var(--color-muted)]">
                     {humanise(m.reason)} · {dateTime(m.createdAt)}
@@ -163,7 +163,7 @@ function AdjustSheet({
       }),
     );
     if (ok !== null) {
-      onDone(`${row.productName} ${row.sizeMl}ml is now ${after}.`);
+      onDone(`${row.productName} ${variantSize(row.sizeMl, row.sizeUnit)} is now ${after}.`);
       onClose();
     }
   }
@@ -172,7 +172,7 @@ function AdjustSheet({
     <Sheet
       open
       onClose={onClose}
-      title={`${row.productName} · ${row.sizeMl}ml`}
+      title={`${row.productName} · ${variantSize(row.sizeMl, row.sizeUnit)}`}
       footer={
         <div className="flex gap-3">
           <button type="button" onClick={onClose} className="ad-btn ad-btn-outline flex-1" disabled={busy}>

@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
-import { money } from '@/lib/format';
+import { money, variantSize } from '@/lib/format';
 import {
   CardSkeleton, EmptyState, ErrorBox, PageHeader, Pagination, StockPill,
 } from '@/components/ui';
@@ -26,7 +26,7 @@ export default function ProductsPage() {
     <>
       <PageHeader
         title="Products"
-        subtitle="Each attar has its own price and stock for 3ml, 6ml and 12ml."
+        subtitle="Each product has up to three sizes, each with its own price and stock."
         action={
           <Link href="/products/new" className="ad-btn ad-btn-primary">
             Add product
@@ -132,7 +132,7 @@ export default function ProductsPage() {
                           className="ad-pill ad-pill-muted ad-num"
                           title={`${v.stockQty} in stock`}
                         >
-                          {v.sizeMl}ml · {money(v.pricePaise, { compact: true })}
+                          {variantSize(v.sizeMl, v.sizeUnit)} · {money(v.pricePaise, { compact: true })}
                         </span>
                       ))
                     )}
