@@ -288,6 +288,24 @@ export interface Review {
   createdAt: string;
 }
 
+export interface ReplacementRequest {
+  id: number;
+  orderId: number;
+  orderItemId: number;
+  customerId: number;
+  orderNumber: string;
+  shipEmail: string;
+  shipFullName: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  adminNote: string | null;
+  decidedAt: string | null;
+  createdAt: string;
+}
+
 export interface Feedback {
   id: number;
   name: string | null;

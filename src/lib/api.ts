@@ -1,7 +1,8 @@
 import type {
   AdminNotification, AdminUser, AwbScanResult, Category, Coupon, Courier,
   Dashboard, Feedback, LowStockRow, Movement, OrderDetail, OrderItem, OrderStatus,
-  OrderSummary, Page, PincodeRange, Product, Review, SettingsMap, ShippingZone, Variant,
+  OrderSummary, Page, PincodeRange, Product, ReplacementRequest, Review, SettingsMap,
+  ShippingZone, Variant,
 } from './types';
 
 /**
@@ -384,6 +385,24 @@ const mapReview = (r: Record<string, unknown>): Review => ({
   createdAt: str(pick(r, 'createdAt', 'created_at')),
 });
 
+const mapReplacementRequest = (r: Record<string, unknown>): ReplacementRequest => ({
+  id: num(r.id),
+  orderId: num(pick(r, 'orderId', 'order_id')),
+  orderItemId: num(pick(r, 'orderItemId', 'order_item_id')),
+  customerId: num(pick(r, 'customerId', 'customer_id')),
+  orderNumber: str(pick(r, 'orderNumber', 'order_number')),
+  shipEmail: str(pick(r, 'shipEmail', 'ship_email')),
+  shipFullName: str(pick(r, 'shipFullName', 'ship_full_name')),
+  productName: str(pick(r, 'productName', 'product_name')),
+  sku: str(r.sku),
+  quantity: num(r.quantity, 1),
+  reason: str(r.reason),
+  status: (str(r.status) || 'pending') as ReplacementRequest['status'],
+  adminNote: nullableStr(pick(r, 'adminNote', 'admin_note')),
+  decidedAt: nullableStr(pick(r, 'decidedAt', 'decided_at')),
+  createdAt: str(pick(r, 'createdAt', 'created_at')),
+});
+
 const mapFeedback = (r: Record<string, unknown>): Feedback => ({
   id: num(r.id),
   name: nullableStr(r.name),
@@ -621,6 +640,16 @@ export const api = {
 
   setReviewStatus: (token: string, id: number, status: string) =>
     request<unknown>(`/admin/reviews/${id}/status`, { method: 'PATCH', token, body: { status } }),
+
+  replacementRequests: (token: string, q: { status?: string; page?: number; limit?: number } = {}) =>
+    request<unknown>('/admin/replacement-requests', { token, query: q }).then((r) => toPage(r, mapReplacementRequest)),
+
+  setReplacementStatus: (token: string, id: number, status: 'approved' | 'rejected', adminNote?: string) =>
+    request<unknown>(`/admin/replacement-requests/${id}/status`, {
+      method: 'PATCH',
+      token,
+      body: { status, admin_note: adminNote || undefined },
+    }),
 
   feedback: (token: string, q: { status?: string; page?: number; limit?: number } = {}) =>
     request<unknown>('/admin/feedback', { token, query: q }).then((r) => toPage(r, mapFeedback)),
