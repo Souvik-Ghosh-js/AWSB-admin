@@ -1,7 +1,7 @@
 import type {
   AdminNotification, AdminUser, AwbScanResult, Category, Coupon, Courier,
   Dashboard, Feedback, LowStockRow, Movement, OrderDetail, OrderItem, OrderStatus,
-  OrderSummary, Page, Product, Review, SettingsMap, Variant,
+  OrderSummary, Page, PincodeRange, Product, Review, SettingsMap, ShippingZone, Variant,
 } from './types';
 
 /**
@@ -351,6 +351,26 @@ const mapCourier = (r: Record<string, unknown>): Courier => ({
   sortOrder: num(pick(r, 'sortOrder', 'sort_order')),
 });
 
+const mapPincodeRange = (r: Record<string, unknown>): PincodeRange => ({
+  id: num(r.id),
+  pincodeStart: str(pick(r, 'pincodeStart', 'pincode_start')),
+  pincodeEnd: str(pick(r, 'pincodeEnd', 'pincode_end')),
+});
+
+const mapShippingZone = (r: Record<string, unknown>): ShippingZone => ({
+  id: num(r.id),
+  slug: str(r.slug),
+  name: str(r.name),
+  ratePaise: num(pick(r, 'ratePaise', 'rate_paise')),
+  freeAbovePaise: nullableNum(pick(r, 'freeAbovePaise', 'free_above_paise')),
+  isFallback: bool(pick(r, 'isFallback', 'is_fallback')),
+  isActive: bool(pick(r, 'isActive', 'is_active')),
+  sortOrder: num(pick(r, 'sortOrder', 'sort_order')),
+  pincodeRanges: Array.isArray(pick(r, 'pincodeRanges', 'pincode_ranges'))
+    ? (pick(r, 'pincodeRanges', 'pincode_ranges') as Record<string, unknown>[]).map(mapPincodeRange)
+    : [],
+});
+
 const mapReview = (r: Record<string, unknown>): Review => ({
   id: num(r.id),
   productId: num(pick(r, 'productId', 'product_id')),
@@ -577,6 +597,23 @@ export const api = {
 
   deleteCourier: (token: string, id: number) =>
     request<void>(`/admin/couriers/${id}`, { method: 'DELETE', token }),
+
+  /* shipping zones */
+  shippingZones: (token: string) =>
+    request<unknown>('/admin/shipping/zones', { token }).then((r) => toList(r, mapShippingZone)),
+
+  createShippingZone: (token: string, input: Record<string, unknown>) =>
+    request<unknown>('/admin/shipping/zones', { method: 'POST', token, body: input }).then((r) =>
+      mapShippingZone(r as Record<string, unknown>),
+    ),
+
+  updateShippingZone: (token: string, id: number, input: Record<string, unknown>) =>
+    request<unknown>(`/admin/shipping/zones/${id}`, { method: 'PATCH', token, body: input }).then((r) =>
+      mapShippingZone(r as Record<string, unknown>),
+    ),
+
+  deleteShippingZone: (token: string, id: number) =>
+    request<void>(`/admin/shipping/zones/${id}`, { method: 'DELETE', token }),
 
   /* reviews & feedback */
   reviews: (token: string, q: { status?: string; page?: number; limit?: number } = {}) =>

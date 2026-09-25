@@ -252,6 +252,27 @@ export interface Courier {
   sortOrder: number;
 }
 
+/* -------------------------------------------------------------- shipping */
+
+export interface PincodeRange {
+  id: number;
+  pincodeStart: string;
+  pincodeEnd: string;
+}
+
+export interface ShippingZone {
+  id: number;
+  slug: string;
+  name: string;
+  ratePaise: number;
+  freeAbovePaise: number | null;
+  /** The zone used when a pincode matches no range at all — exactly one must be true. */
+  isFallback: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  pincodeRanges: PincodeRange[];
+}
+
 /* ------------------------------------------------------ reviews & feedback */
 
 export interface Review {
