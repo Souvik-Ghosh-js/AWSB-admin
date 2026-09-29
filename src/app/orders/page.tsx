@@ -19,6 +19,10 @@ const FILTERS: { value: string; label: string }[] = [
   { value: 'delivered', label: 'Delivered' },
   { value: 'pending_payment', label: 'Unpaid' },
   { value: 'cancelled', label: 'Cancelled' },
+  // Not a real order status — checkouts the sweeper auto-cancelled for
+  // non-payment. Distinct from "Cancelled", which also includes cancels the
+  // customer or an admin chose deliberately.
+  { value: 'abandoned', label: 'Abandoned' },
 ];
 
 export default function OrdersPage() {
@@ -37,8 +41,16 @@ function OrdersInner() {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
 
+  const abandoned = status === 'abandoned';
   const { data, error, loading, reload } = useApi<Page<OrderSummary>>(
-    (t) => api.orders(t, { page, limit: 20, status: status || undefined, q: query || undefined }),
+    (t) =>
+      api.orders(t, {
+        page,
+        limit: 20,
+        status: abandoned ? undefined : status || undefined,
+        abandoned: abandoned || undefined,
+        q: query || undefined,
+      }),
     [page, status, query],
   );
 

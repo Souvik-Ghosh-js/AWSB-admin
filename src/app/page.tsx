@@ -43,7 +43,8 @@ export default function DashboardPage() {
   const toShip = (data.ordersByStatus.confirmed ?? 0) + (data.ordersByStatus.packed ?? 0);
   const inTransit = data.ordersByStatus.shipped ?? 0;
   const low = data.lowStock.length;
-  const anything = toShip > 0 || inTransit > 0 || low > 0;
+  const abandoned = data.abandonedCheckoutCount;
+  const anything = toShip > 0 || inTransit > 0 || low > 0 || abandoned > 0;
 
   return (
     <>
@@ -53,7 +54,7 @@ export default function DashboardPage() {
       <section className="mb-8">
         <p className="ad-eyebrow mb-3">Needs attention</p>
         {anything ? (
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {toShip > 0 ? (
               <Action
                 href="/orders?status=confirmed"
@@ -74,6 +75,15 @@ export default function DashboardPage() {
             ) : null}
             {low > 0 ? (
               <Action href="/inventory" n={low} label="running low" sub="Restock soon" tone="danger" />
+            ) : null}
+            {abandoned > 0 ? (
+              <Action
+                href="/orders?status=abandoned"
+                n={abandoned}
+                label={abandoned === 1 ? 'abandoned checkout' : 'abandoned checkouts'}
+                sub="Stopped at payment · last 14 days"
+                tone="muted"
+              />
             ) : null}
           </div>
         ) : (
@@ -203,9 +213,14 @@ function Heading() {
 function Action({
   href, n, label, sub, tone,
 }: {
-  href: string; n: number; label: string; sub: string; tone: 'warn' | 'info' | 'danger';
+  href: string; n: number; label: string; sub: string; tone: 'warn' | 'info' | 'danger' | 'muted';
 }) {
-  const bg = { warn: 'var(--color-warn)', info: 'var(--color-info)', danger: 'var(--color-danger)' }[tone];
+  const bg = {
+    warn: 'var(--color-warn)',
+    info: 'var(--color-info)',
+    danger: 'var(--color-danger)',
+    muted: 'var(--color-brand-soft)',
+  }[tone];
   return (
     <Link
       href={href}

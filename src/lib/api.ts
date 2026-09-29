@@ -471,6 +471,7 @@ function mapDashboard(raw: unknown): Dashboard {
     })),
     pendingReviewCount: num(pick(r, 'pendingReviewCount', 'pending_review_count', 'pending_count')),
     newFeedbackCount: num(pick(r, 'newFeedbackCount', 'new_feedback_count', 'new_count')),
+    abandonedCheckoutCount: num(pick(r, 'abandonedCheckoutCount', 'abandoned_checkout_count')),
   };
 }
 
@@ -494,8 +495,10 @@ export const api = {
     request<unknown>('/admin/dashboard', { token }).then(mapDashboard),
 
   /* orders */
-  orders: (token: string, q: { page?: number; limit?: number; status?: string; q?: string } = {}) =>
-    request<unknown>('/admin/orders', { token, query: q }).then((r) => toPage(r, mapOrderSummary)),
+  orders: (
+    token: string,
+    q: { page?: number; limit?: number; status?: string; q?: string; abandoned?: boolean } = {},
+  ) => request<unknown>('/admin/orders', { token, query: q }).then((r) => toPage(r, mapOrderSummary)),
 
   order: (token: string, id: number) =>
     request<unknown>(`/admin/orders/${id}`, { token }).then(mapOrderDetail),

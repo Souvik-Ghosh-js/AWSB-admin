@@ -78,6 +78,8 @@ export interface Dashboard {
   recentOrders: DashboardOrder[];
   pendingReviewCount: number;
   newFeedbackCount: number;
+  /** Checkouts the sweeper auto-cancelled for non-payment, last 14 days. */
+  abandonedCheckoutCount: number;
 }
 
 /* ---------------------------------------------------------------- orders */
