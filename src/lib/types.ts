@@ -146,7 +146,9 @@ export interface OrderDetail extends OrderSummary {
   shipLine1: string;
   shipLine2: string | null;
   shipLandmark: string | null;
+  shipDistrict: string | null;
   shipState: string;
+  shipCountry: string;
   subtotalPaise: number;
   discountPaise: number;
   shippingPaise: number;

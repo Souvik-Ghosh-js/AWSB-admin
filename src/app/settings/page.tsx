@@ -21,6 +21,15 @@ const KNOWN: { key: string; label: string; hint?: string; type: 'text' | 'number
   { key: 'store.phone_alt', label: 'Second phone', type: 'text' },
   { key: 'store.address', label: 'Address', type: 'text' },
   {
+    key: 'store.address_line1',
+    label: 'Address line 1',
+    hint: 'Used as the "from" address on printed shipping labels and invoices.',
+    type: 'text',
+  },
+  { key: 'store.address_city', label: 'City', type: 'text' },
+  { key: 'store.address_state', label: 'State', type: 'text' },
+  { key: 'store.address_pincode', label: 'Pincode', type: 'text' },
+  {
     key: 'checkout.reservation_minutes',
     label: 'Hold stock for (minutes)',
     hint: 'How long an unpaid checkout keeps its stock before releasing it.',

@@ -74,6 +74,12 @@ export function Shell({ children }: { children: ReactNode }) {
 
   if (pathname === '/login') return <>{children}</>;
 
+  // Print pages (order label/invoice) render full-bleed with no nav chrome —
+  // the sidebar and header would print too and waste label space — but still
+  // go through the same sign-in gate below, since they show real customer data.
+  const isPrintPage = pathname.includes('/print/');
+  if (isPrintPage && checked && user) return <>{children}</>;
+
   if (!checked || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[color:var(--color-chrome)]">

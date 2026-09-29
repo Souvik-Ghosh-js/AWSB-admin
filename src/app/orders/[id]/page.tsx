@@ -126,6 +126,30 @@ export default function OrderPage() {
         </div>
       )}
 
+      {/* ---------------------------------------------------------- print */}
+      <div className="mb-6 flex flex-wrap gap-3">
+        <a
+          href={`/orders/${id}/print/invoice`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ad-btn ad-btn-outline flex-1 sm:flex-none"
+        >
+          Print invoice
+        </a>
+        {shipment ? (
+          <a
+            href={`/orders/${id}/print/label`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ad-btn ad-btn-outline flex-1 sm:flex-none"
+          >
+            Print label
+          </a>
+        ) : (
+          <span className="ad-hint self-center">Print label becomes available once this order has shipped.</span>
+        )}
+      </div>
+
       {canDelete && can(user, 'owner') ? (
         <div className="mb-6">
           <button
