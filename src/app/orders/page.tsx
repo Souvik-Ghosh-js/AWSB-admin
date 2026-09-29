@@ -53,7 +53,10 @@ function OrdersInner() {
 
   function openBulkPrint(kind: 'labels' | 'invoices') {
     if (selected.size === 0) return;
-    window.open(`/orders/print/${kind}?ids=${[...selected].join(',')}`, '_blank', 'noopener,noreferrer');
+    // No noopener/noreferrer: this is a same-origin admin page, and dropping
+    // the opener relationship stops the new tab's sessionStorage from
+    // cloning the admin JWT, which sent it straight to a login screen.
+    window.open(`/orders/print/${kind}?ids=${[...selected].join(',')}`, '_blank');
   }
 
   const abandoned = status === 'abandoned';

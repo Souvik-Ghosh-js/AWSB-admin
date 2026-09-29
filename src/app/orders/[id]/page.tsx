@@ -127,24 +127,26 @@ export default function OrderPage() {
       )}
 
       {/* ---------------------------------------------------------- print */}
+      {/* Plain window.open, no noopener: the admin JWT lives in sessionStorage,
+          which only clones into a new tab when the opener relationship is
+          kept. An <a target="_blank" rel="noopener"> here sent every print
+          click straight to a blank session and the login screen. */}
       <div className="mb-6 flex flex-wrap gap-3">
-        <a
-          href={`/orders/${id}/print/invoice`}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => window.open(`/orders/${id}/print/invoice`, '_blank')}
           className="ad-btn ad-btn-outline flex-1 sm:flex-none"
         >
           Print invoice
-        </a>
+        </button>
         {shipment ? (
-          <a
-            href={`/orders/${id}/print/label`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => window.open(`/orders/${id}/print/label`, '_blank')}
             className="ad-btn ad-btn-outline flex-1 sm:flex-none"
           >
             Print label
-          </a>
+          </button>
         ) : (
           <span className="ad-hint self-center">Print label becomes available once this order has shipped.</span>
         )}
