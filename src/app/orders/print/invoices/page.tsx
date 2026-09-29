@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { readPrintShopDetails } from '@/lib/printShop';
+import { printWhenImagesReady } from '@/lib/printReady';
 import { Invoice, INVOICE_PRINT_CSS } from '@/components/print/Invoice';
 import { CardSkeleton, ErrorBox } from '@/components/ui';
 import type { OrderDetail, SettingsMap } from '@/lib/types';
@@ -38,10 +39,7 @@ function BulkInvoicePrintInner() {
   );
 
   useEffect(() => {
-    if (data) {
-      const t = setTimeout(() => window.print(), 300);
-      return () => clearTimeout(t);
-    }
+    if (data) void printWhenImagesReady();
   }, [data]);
 
   if (ids.length === 0) return <ErrorBox message="No orders selected." />;

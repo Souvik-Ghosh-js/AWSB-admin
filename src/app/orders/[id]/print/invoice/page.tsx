@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { readPrintShopDetails } from '@/lib/printShop';
+import { printWhenImagesReady } from '@/lib/printReady';
 import { Invoice, INVOICE_PRINT_CSS } from '@/components/print/Invoice';
 import { CardSkeleton, ErrorBox } from '@/components/ui';
 import type { OrderDetail, SettingsMap } from '@/lib/types';
@@ -28,10 +29,7 @@ export default function InvoicePrintPage() {
   );
 
   useEffect(() => {
-    if (data) {
-      const t = setTimeout(() => window.print(), 300);
-      return () => clearTimeout(t);
-    }
+    if (data) void printWhenImagesReady();
   }, [data]);
 
   if (loading) return <CardSkeleton rows={3} />;

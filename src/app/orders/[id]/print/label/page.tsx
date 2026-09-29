@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { readPrintShopDetails } from '@/lib/printShop';
+import { printWhenImagesReady } from '@/lib/printReady';
 import { ShippingLabel, LABEL_PRINT_CSS } from '@/components/print/ShippingLabel';
 import { CardSkeleton, ErrorBox } from '@/components/ui';
 import type { OrderDetail, SettingsMap } from '@/lib/types';
@@ -28,12 +29,7 @@ export default function LabelPrintPage() {
   );
 
   useEffect(() => {
-    if (data) {
-      // A brief delay lets the print stylesheet and logo image settle before
-      // the browser's print dialog captures the page.
-      const t = setTimeout(() => window.print(), 300);
-      return () => clearTimeout(t);
-    }
+    if (data) void printWhenImagesReady();
   }, [data]);
 
   if (loading) return <CardSkeleton rows={3} />;
