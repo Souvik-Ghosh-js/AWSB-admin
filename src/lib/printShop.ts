@@ -12,7 +12,17 @@ export interface PrintShopDetails {
   pincode: string;
 }
 
-const str = (v: unknown, fallback = ''): string => (typeof v === 'string' && v ? v : fallback);
+// store.phone/store.phone_alt/store.address_pincode have at some point been
+// saved as raw JSON numbers rather than strings (visible in a direct API
+// check: "store.phone":7003356210, no quotes) — a plain typeof === 'string'
+// check silently dropped them to the fallback, which is why the shop's own
+// phone number was missing from both printed documents even though the
+// Settings page showed it and the database genuinely had it.
+const str = (v: unknown, fallback = ''): string => {
+  if (typeof v === 'string' && v) return v;
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+  return fallback;
+};
 
 export function readPrintShopDetails(settings: SettingsMap | null): PrintShopDetails {
   const s = settings ?? {};
