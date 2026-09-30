@@ -49,7 +49,7 @@ export function ShippingLabel({ order, shop }: { order: OrderDetail; shop: Print
           <p className="label-shop-name">{shop.name}</p>
           <p className="label-shop-line">{[shop.line1, shop.city].filter(Boolean).join(', ')}</p>
           <p className="label-shop-line">{[shop.state, shop.pincode].filter(Boolean).join(' - ')}</p>
-          <p className="label-shop-line">{shop.phone}</p>
+          <p className="label-shop-line">Mobile: {shop.phone}</p>
         </div>
       </header>
 
@@ -62,7 +62,7 @@ export function ShippingLabel({ order, shop }: { order: OrderDetail; shop: Print
         <p className="label-addr">
           {[shop.city, shop.state, shop.pincode].filter(Boolean).join(', ')}
         </p>
-        <p className="label-addr">{shop.phone}</p>
+        <p className="label-addr">Mobile: {shop.phone}</p>
       </section>
 
       <div className="label-rule" />
@@ -79,7 +79,7 @@ export function ShippingLabel({ order, shop }: { order: OrderDetail; shop: Print
         <p className="label-addr label-addr-lg">
           {[order.shipState, order.shipPincode].filter(Boolean).join(' - ')}
         </p>
-        <p className="label-addr">Ph: {order.shipPhone}</p>
+        <p className="label-addr">Mobile: {order.shipPhone}</p>
       </section>
 
       <div className="label-rule" />

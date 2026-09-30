@@ -55,7 +55,7 @@ export function Invoice({ order, shop }: { order: OrderDetail; shop: PrintShopDe
           <p className="inv-shop-name">{shop.name}</p>
           <p className="inv-shop-line">{[shop.line1, shop.city].filter(Boolean).join(', ')}</p>
           <p className="inv-shop-line">
-            {[shop.state, shop.pincode].filter(Boolean).join(' - ')} · {shop.phone}
+            {[shop.state, shop.pincode].filter(Boolean).join(' - ')} · Mobile: {shop.phone}
           </p>
         </div>
       </header>
@@ -71,7 +71,7 @@ export function Invoice({ order, shop }: { order: OrderDetail; shop: PrintShopDe
           <p className="inv-bill-line">
             {[order.shipCity, order.shipState, order.shipPincode].filter(Boolean).join(', ')}
           </p>
-          <p className="inv-bill-line">Ph: {order.shipPhone}</p>
+          <p className="inv-bill-line">Mobile: {order.shipPhone}</p>
         </div>
         <div className="inv-meta-right">
           <p><span className="inv-eyebrow">Order</span> {order.orderNumber}</p>
