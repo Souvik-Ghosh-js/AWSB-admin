@@ -11,6 +11,7 @@ import { money, toPaise, toRupeeInput, variantSize } from '@/lib/format';
 import {
   CardSkeleton, ConfirmSheet, ErrorBox, PageHeader, Spinner, StockPill, Toast,
 } from '@/components/ui';
+import { AdjustStockSheet, type AdjustableVariant } from '@/components/AdjustStockSheet';
 import type { Category, Product, Variant } from '@/lib/types';
 
 const ML_SIZES = [3, 6, 12] as const;
@@ -71,6 +72,7 @@ export default function ProductEditorPage() {
   const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'danger' } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [adjusting, setAdjusting] = useState<AdjustableVariant | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -580,11 +582,29 @@ export default function ProductEditorPage() {
             <section className="ad-card p-4">
               <h2 className="mb-3 text-base">Stock right now</h2>
               {data.variants.filter((v) => v.isEnabled).map((v) => (
-                <div key={v.id} className="flex items-center justify-between py-1.5">
+                <div key={v.id} className="flex items-center justify-between gap-2 py-1.5">
                   <span className="text-sm">{variantSize(v.sizeMl, v.sizeUnit)}</span>
-                  <StockPill qty={v.stockQty} threshold={v.lowStockThreshold} />
+                  <div className="flex items-center gap-2">
+                    <StockPill qty={v.stockQty} threshold={v.lowStockThreshold} />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAdjusting({
+                          variantId: v.id,
+                          productName: data.name,
+                          sizeMl: v.sizeMl,
+                          sizeUnit: v.sizeUnit,
+                          stockQty: v.stockQty,
+                        })
+                      }
+                      className="ad-btn ad-btn-outline ad-btn-sm"
+                    >
+                      Adjust
+                    </button>
+                  </div>
                 </div>
               ))}
+              <p className="ad-hint mt-2">Every change here is recorded with a reason.</p>
             </section>
           ) : null}
 
@@ -610,6 +630,17 @@ export default function ProductEditorPage() {
         message="It disappears from the shop. Past orders keep their own copy of the name and price, so order history stays correct."
         confirmLabel="Delete"
       />
+
+      {adjusting ? (
+        <AdjustStockSheet
+          row={adjusting}
+          onClose={() => setAdjusting(null)}
+          onDone={(msg) => {
+            setToast({ msg, tone: 'ok' });
+            reload();
+          }}
+        />
+      ) : null}
 
       {toast ? <Toast message={toast.msg} tone={toast.tone} onDismiss={() => setToast(null)} /> : null}
     </>
