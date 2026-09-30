@@ -18,9 +18,9 @@ export const LABEL_PRINT_CSS = `
     font-family: Arial, Helvetica, sans-serif;
     box-sizing: border-box;
   }
-  .label-header { display: flex; align-items: center; gap: 10px; }
-  .label-logo { border-radius: 6px; flex-shrink: 0; }
-  .label-shop-name { font-size: 15px; font-weight: 700; line-height: 1.2; }
+  .label-header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; }
+  .label-logo { width: 48px; height: auto; }
+  .label-shop-name { font-size: 15px; font-weight: 700; line-height: 1.2; margin-top: 2px; }
   .label-shop-line { font-size: 10px; color: #444; line-height: 1.35; }
   .label-rule { border-top: 1px dashed #999; margin: 10px 0; }
   .label-block { line-height: 1.4; }
@@ -44,13 +44,11 @@ export function ShippingLabel({ order, shop }: { order: OrderDetail; shop: Print
     <div className="label-page">
       <header className="label-header">
         {/* eslint-disable-next-line @next/next/no-img-element -- plain img so it renders immediately for print, no Next.js image-loader delay */}
-        <img src="/logo-mark.png" alt="" width={44} height={44} className="label-logo" />
-        <div>
-          <p className="label-shop-name">{shop.name}</p>
-          <p className="label-shop-line">{[shop.line1, shop.city].filter(Boolean).join(', ')}</p>
-          <p className="label-shop-line">{[shop.state, shop.pincode].filter(Boolean).join(' - ')}</p>
-          <p className="label-shop-line">{shop.phone}</p>
-        </div>
+        <img src="/logo-full.png" alt="" width={48} height={59} className="label-logo" />
+        <p className="label-shop-name">{shop.name}</p>
+        <p className="label-shop-line">{[shop.line1, shop.city].filter(Boolean).join(', ')}</p>
+        <p className="label-shop-line">{[shop.state, shop.pincode].filter(Boolean).join(' - ')}</p>
+        <p className="label-shop-line">{shop.phone}</p>
       </header>
 
       <div className="label-rule" />

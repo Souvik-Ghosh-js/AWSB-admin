@@ -19,9 +19,9 @@ export const INVOICE_PRINT_CSS = `
     box-sizing: border-box;
     font-size: 11px;
   }
-  .inv-header { display: flex; align-items: center; gap: 8px; }
-  .inv-logo { border-radius: 5px; flex-shrink: 0; }
-  .inv-shop-name { font-size: 14px; font-weight: 700; line-height: 1.2; }
+  .inv-header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px; }
+  .inv-logo { width: 40px; height: auto; }
+  .inv-shop-name { font-size: 14px; font-weight: 700; line-height: 1.2; margin-top: 2px; }
   .inv-shop-line { font-size: 9px; color: #444; line-height: 1.3; }
   .inv-rule { border-top: 1px solid #333; margin: 10px 0; }
   .inv-meta { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
@@ -50,14 +50,12 @@ export function Invoice({ order, shop }: { order: OrderDetail; shop: PrintShopDe
     <div className="inv-page">
       <header className="inv-header">
         {/* eslint-disable-next-line @next/next/no-img-element -- plain img so it renders immediately for print, no Next.js image-loader delay */}
-        <img src="/logo-mark.png" alt="" width={40} height={40} className="inv-logo" />
-        <div>
-          <p className="inv-shop-name">{shop.name}</p>
-          <p className="inv-shop-line">{[shop.line1, shop.city].filter(Boolean).join(', ')}</p>
-          <p className="inv-shop-line">
-            {[shop.state, shop.pincode].filter(Boolean).join(' - ')} · {shop.phone}
-          </p>
-        </div>
+        <img src="/logo-full.png" alt="" width={40} height={49} className="inv-logo" />
+        <p className="inv-shop-name">{shop.name}</p>
+        <p className="inv-shop-line">{[shop.line1, shop.city].filter(Boolean).join(', ')}</p>
+        <p className="inv-shop-line">
+          {[shop.state, shop.pincode].filter(Boolean).join(' - ')} · {shop.phone}
+        </p>
       </header>
 
       <div className="inv-rule" />
@@ -71,6 +69,7 @@ export function Invoice({ order, shop }: { order: OrderDetail; shop: PrintShopDe
           <p className="inv-bill-line">
             {[order.shipCity, order.shipState, order.shipPincode].filter(Boolean).join(', ')}
           </p>
+          <p className="inv-bill-line">Ph: {order.shipPhone}</p>
         </div>
         <div className="inv-meta-right">
           <p><span className="inv-eyebrow">Order</span> {order.orderNumber}</p>
