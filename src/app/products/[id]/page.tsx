@@ -112,7 +112,19 @@ export default function ProductEditorPage() {
       // Grams/sticks sizes are whatever the admin set them to, not a fixed
       // list — hydrate from the product's own rows, padding up to 3 blank
       // slots so the form always has three to fill in.
-      const rows: VariantDraft[] = data.variants.map((v) => ({
+      //
+      // Only ever keep 3: a product sells at most 3 sizes by design (the
+      // backend's own variants array is capped at 3 per request), and an
+      // earlier bulk size/unit migration left some products with extra
+      // disabled "parking" rows at odd placeholder sizes (e.g. 1226ml) that
+      // were never cleaned up. Loading all of them into this form meant every
+      // save — even one that never touched sizes — resent 4+ variants and the
+      // backend's 3-item cap rejected the whole request, which is why some
+      // products could not be saved at all. Enabled rows are kept first, so
+      // an admin's real sizes are never the ones silently dropped.
+      const enabled = data.variants.filter((v) => v.isEnabled);
+      const disabled = data.variants.filter((v) => !v.isEnabled);
+      const rows: VariantDraft[] = [...enabled, ...disabled].slice(0, 3).map((v) => ({
         id: v.id,
         sizeValue: v.sizeMl,
         price: toRupeeInput(v.pricePaise),
