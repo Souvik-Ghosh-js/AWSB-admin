@@ -684,11 +684,16 @@ export const api = {
     return (r?.settings ?? r ?? {}) as SettingsMap;
   },
 
+  // PUT /admin/settings, not a per-key PATCH route (there isn't one) — it
+  // replaces only the named keys, so sending one key here is safe and never
+  // touches the others. A stale PATCH call here 404'd silently: the Settings
+  // page never surfaced the error, so an edit looked saved (it stayed in the
+  // input) but never reached the database at all.
   updateSetting: (token: string, key: string, value: unknown) =>
-    request<unknown>(`/admin/settings/${encodeURIComponent(key)}`, {
-      method: 'PATCH',
+    request<unknown>('/admin/settings', {
+      method: 'PUT',
       token,
-      body: { value },
+      body: { settings: { [key]: value } },
     }),
 
   users: (token: string) =>

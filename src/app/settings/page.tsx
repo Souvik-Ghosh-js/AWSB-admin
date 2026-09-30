@@ -80,6 +80,8 @@ export default function SettingsPage() {
     if (ok !== null) {
       setToast({ msg: 'Saved.', tone: 'ok' });
       reload();
+    } else {
+      setToast({ msg: 'Could not save that — please try again.', tone: 'danger' });
     }
   }
 
