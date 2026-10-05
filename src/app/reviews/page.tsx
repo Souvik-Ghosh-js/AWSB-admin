@@ -9,7 +9,7 @@ import { CardSkeleton, ConfirmSheet, EmptyState, ErrorBox, PageHeader, Spinner, 
 import type { Page, Review } from '@/lib/types';
 
 export default function ReviewsPage() {
-  const [status, setStatus] = useState('pending');
+  const [status, setStatus] = useState('approved');
   const { data, error, loading, reload } = useApi<Page<Review>>(
     (t) => api.reviews(t, { status: status || undefined, limit: 50 }),
     [status],
@@ -44,13 +44,12 @@ export default function ReviewsPage() {
     <>
       <PageHeader
         title="Reviews"
-        subtitle="Nothing appears on the shop until you approve it."
+        subtitle="Reviews go live immediately — no approval needed. Reject or delete one here to pull it down."
       />
 
       <div className="ad-scroll-x -mx-4 mb-4 px-4 lg:mx-0 lg:px-0">
         <div className="flex gap-2 pb-1">
           {[
-            { v: 'pending', l: 'Waiting' },
             { v: 'approved', l: 'Published' },
             { v: 'rejected', l: 'Rejected' },
             { v: '', l: 'All' },
@@ -73,14 +72,7 @@ export default function ReviewsPage() {
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
       ) : !data || data.items.length === 0 ? (
-        <EmptyState
-          title={status === 'pending' ? 'Nothing waiting' : 'No reviews here'}
-          message={
-            status === 'pending'
-              ? 'New reviews appear here for you to approve before they go live.'
-              : undefined
-          }
-        />
+        <EmptyState title="No reviews here" />
       ) : (
         <div className="space-y-3">
           {data.items.map((r) => (
