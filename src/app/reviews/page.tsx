@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useAction, useApi } from '@/lib/useApi';
 import { dateOnly } from '@/lib/format';
-import { CardSkeleton, EmptyState, ErrorBox, PageHeader, Spinner, Toast } from '@/components/ui';
+import { CardSkeleton, ConfirmSheet, EmptyState, ErrorBox, PageHeader, Spinner, Toast } from '@/components/ui';
 import type { Page, Review } from '@/lib/types';
 
 export default function ReviewsPage() {
@@ -15,8 +15,10 @@ export default function ReviewsPage() {
     [status],
   );
   const { run, busy } = useAction();
+  const { run: runDelete, busy: deleting } = useAction();
   const [toast, setToast] = useState<string | null>(null);
   const [acting, setActing] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Review | null>(null);
 
   async function setReview(id: number, next: 'approved' | 'rejected') {
     setActing(id);
@@ -24,6 +26,16 @@ export default function ReviewsPage() {
     setActing(null);
     if (ok !== null) {
       setToast(next === 'approved' ? 'Review published.' : 'Review rejected.');
+      reload();
+    }
+  }
+
+  async function doDelete() {
+    if (!confirmDelete) return;
+    const ok = await runDelete((t) => api.deleteReview(t, confirmDelete.id));
+    setConfirmDelete(null);
+    if (ok !== null) {
+      setToast('Review deleted.');
       reload();
     }
   }
@@ -126,11 +138,34 @@ export default function ReviewsPage() {
                       Reject
                     </button>
                   ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(r)}
+                    disabled={busy}
+                    className="ad-btn ad-btn-outline ad-btn-sm text-[color:var(--color-danger)]"
+                  >
+                    Delete
+                  </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmSheet
+        open={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={doDelete}
+        title="Delete this review?"
+        message={
+          confirmDelete
+            ? `"${confirmDelete.title ?? confirmDelete.body?.slice(0, 60) ?? 'This review'}" by ${confirmDelete.authorName} will be permanently removed.`
+            : ''
+        }
+        confirmLabel="Delete"
+        danger
+        busy={deleting}
+      />
 
       {toast ? <Toast message={toast} onDismiss={() => setToast(null)} /> : null}
     </>

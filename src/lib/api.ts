@@ -646,6 +646,9 @@ export const api = {
   setReviewStatus: (token: string, id: number, status: string) =>
     request<unknown>(`/admin/reviews/${id}/status`, { method: 'PATCH', token, body: { status } }),
 
+  deleteReview: (token: string, id: number) =>
+    request<{ id: string; deleted: boolean }>(`/admin/reviews/${id}`, { method: 'DELETE', token }),
+
   replacementRequests: (token: string, q: { status?: string; page?: number; limit?: number } = {}) =>
     request<unknown>('/admin/replacement-requests', { token, query: q }).then((r) => toPage(r, mapReplacementRequest)),
 
