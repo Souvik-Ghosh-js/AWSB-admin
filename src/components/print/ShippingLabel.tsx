@@ -55,18 +55,6 @@ export function ShippingLabel({ order, shop }: { order: OrderDetail; shop: Print
 
       <div className="label-rule" />
 
-      <section className="label-block">
-        <p className="label-eyebrow">From</p>
-        <p className="label-name">{shop.name}</p>
-        <p className="label-addr">{shop.line1}</p>
-        <p className="label-addr">
-          {[shop.city, shop.state, shop.pincode].filter(Boolean).join(', ')}
-        </p>
-        <p className="label-addr">Mobile: {shop.phone}</p>
-      </section>
-
-      <div className="label-rule" />
-
       <section className="label-block label-to">
         <p className="label-eyebrow">To</p>
         <p className="label-name">{order.shipFullName}</p>
@@ -80,6 +68,18 @@ export function ShippingLabel({ order, shop }: { order: OrderDetail; shop: Print
           {[order.shipState, order.shipPincode].filter(Boolean).join(' - ')}
         </p>
         <p className="label-addr">Mobile: {order.shipPhone}</p>
+      </section>
+
+      <div className="label-rule" />
+
+      <section className="label-block">
+        <p className="label-eyebrow">From</p>
+        <p className="label-name">{shop.name}</p>
+        <p className="label-addr">{shop.line1}</p>
+        <p className="label-addr">
+          {[shop.city, shop.state, shop.pincode].filter(Boolean).join(', ')}
+        </p>
+        <p className="label-addr">Mobile: {shop.phone}</p>
       </section>
 
       <div className="label-rule" />
