@@ -36,11 +36,40 @@ export default function OrdersPage() {
 function OrdersInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const [status, setStatus] = useState(params.get('status') ?? '');
-  const [search, setSearch] = useState('');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
+
+  // Filter/search/page state lives in the URL (not just useState) so that
+  // coming back from an order's detail page — via the back button or the
+  // "All orders" link — lands exactly where the admin left off, instead of
+  // resetting to page 1 with no filter. See the order detail page's "All
+  // orders" link, which now sends the admin back to this same URL.
+  const status = params.get('status') ?? '';
+  const query = params.get('q') ?? '';
+  const page = Number(params.get('page') ?? '1');
   const [selected, setSelected] = useState<Set<number>>(new Set());
+
+  function updateParams(next: { status?: string; q?: string; page?: number }) {
+    const sp = new URLSearchParams(params.toString());
+    const apply = (key: string, value: string | number | undefined) => {
+      if (value === undefined || value === '' || value === 1) sp.delete(key);
+      else sp.set(key, String(value));
+    };
+    if ('status' in next) apply('status', next.status);
+    if ('q' in next) apply('q', next.q);
+    if ('page' in next) apply('page', next.page);
+    router.replace(`/orders${sp.toString() ? `?${sp.toString()}` : ''}`);
+  }
+
+  function setStatus(value: string) {
+    updateParams({ status: value, page: 1 });
+  }
+
+  function setQuery(value: string) {
+    updateParams({ q: value, page: 1 });
+  }
+
+  function setPage(value: number) {
+    updateParams({ page: value });
+  }
 
   function toggleSelected(id: number) {
     setSelected((prev) => {
@@ -58,6 +87,10 @@ function OrdersInner() {
     // cloning the admin JWT, which sent it straight to a login screen.
     window.open(`/orders/print/${kind}?ids=${[...selected].join(',')}`, '_blank');
   }
+
+  // Carried onto each order's detail page so its "All orders" link can
+  // return here exactly, instead of resetting to page 1 with no filter.
+  const backHref = `/orders${params.toString() ? `?${params.toString()}` : ''}`;
 
   const abandoned = status === 'abandoned';
   const { data, error, loading, reload } = useApi<Page<OrderSummary>>(
@@ -84,10 +117,7 @@ function OrdersInner() {
             <button
               key={f.value}
               type="button"
-              onClick={() => {
-                setStatus(f.value);
-                setPage(1);
-              }}
+              onClick={() => setStatus(f.value)}
               aria-pressed={status === f.value}
               className={`ad-btn ad-btn-sm shrink-0 ${
                 status === f.value ? 'ad-btn-primary' : 'ad-btn-outline'
@@ -100,17 +130,21 @@ function OrdersInner() {
       </div>
 
       <form
+        // Keyed by the URL's own query so that landing back here (e.g. via
+        // the browser back button) after a search re-syncs the input to
+        // match, instead of a stale local useState frozen from first mount.
+        key={query}
         onSubmit={(e) => {
           e.preventDefault();
-          setQuery(search.trim());
-          setPage(1);
+          const value = new FormData(e.currentTarget).get('q');
+          setQuery(typeof value === 'string' ? value.trim() : '');
         }}
         className="mb-4 flex gap-2"
       >
         <input
           type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          name="q"
+          defaultValue={query}
           placeholder="Order number, name, email or phone"
           aria-label="Search orders"
           className="ad-input"
@@ -155,11 +189,7 @@ function OrdersInner() {
             query || status ? (
               <button
                 type="button"
-                onClick={() => {
-                  setStatus('');
-                  setQuery('');
-                  setSearch('');
-                }}
+                onClick={() => updateParams({ status: '', q: '', page: 1 })}
                 className="ad-btn ad-btn-outline"
               >
                 Clear filters
@@ -181,7 +211,7 @@ function OrdersInner() {
                   aria-label={`Select order ${o.orderNumber}`}
                   className="mt-1 h-5 w-5 shrink-0 accent-[color:var(--color-brand)]"
                 />
-                <Link href={`/orders/${o.id}`} className="block min-w-0 flex-1">
+                <Link href={`/orders/${o.id}?from=${encodeURIComponent(backHref)}`} className="block min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="ad-mono text-sm font-semibold">{o.orderNumber}</p>
@@ -242,7 +272,7 @@ function OrdersInner() {
                     <tr
                       key={o.id}
                       className="cursor-pointer hover:bg-[color:var(--color-surface-alt)]"
-                      onClick={() => router.push(`/orders/${o.id}`)}
+                      onClick={() => router.push(`/orders/${o.id}?from=${encodeURIComponent(backHref)}`)}
                     >
                       <td onClick={(e) => e.stopPropagation()}>
                         <input
@@ -255,7 +285,7 @@ function OrdersInner() {
                       </td>
                       <td>
                         <Link
-                          href={`/orders/${o.id}`}
+                          href={`/orders/${o.id}?from=${encodeURIComponent(backHref)}`}
                           onClick={(e) => e.stopPropagation()}
                           className="ad-mono ad-link font-medium"
                         >

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { api } from '@/lib/api';
@@ -19,6 +19,12 @@ export default function OrderPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = Number(params.id);
+
+  // The orders list carries its own filter/search/page here as ?from=... so
+  // "All orders" returns exactly there, instead of always resetting to an
+  // unfiltered page 1.
+  const searchParams = useSearchParams();
+  const backHref = searchParams.get('from') || '/orders';
 
   const { data, error, loading, reload } = useApi<OrderDetail>((t) => api.order(t, id), [id]);
   const { run, busy } = useAction();
@@ -80,14 +86,14 @@ export default function OrderPage() {
     const ok = await run((t) => api.deleteOrder(t, id));
     setDeleteOpen(false);
     if (ok !== null) {
-      router.replace('/orders');
+      router.replace(backHref);
     }
   }
 
   return (
     <>
       <div className="mb-4">
-        <Link href="/orders" className="ad-link text-sm">
+        <Link href={backHref} className="ad-link text-sm">
           ← All orders
         </Link>
       </div>
